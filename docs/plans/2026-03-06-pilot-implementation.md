@@ -779,7 +779,16 @@ mkdir -p skills/{coverage,lint-fix,duplication,entropy,deps,types,docs,migrate,a
 
 **Step 2: Write each SKILL.md using this template pattern**
 
-Every recipe skill follows this structure:
+Every recipe skill follows this structure. **All recipe skills accept optional arguments** to narrow scope:
+
+```
+/pilot:types                      # whole codebase
+/pilot:types src/api/             # just this directory
+/pilot:types src/api/auth.ts      # just this file
+/pilot:triage --label bug         # filter by label
+```
+
+The skill must include an **Arguments** section and scope-aware instructions in the prompt.
 
 ```markdown
 ---
@@ -790,6 +799,15 @@ description: Use when [specific trigger]. [Keywords for discovery].
 # PILOT [Name] — [One-Line Description]
 
 [One sentence explaining what this does.]
+
+## Arguments
+
+Optional scope: `/pilot:[name] [path or flags]`
+
+- **No arguments** — operates on the entire codebase
+- **File path** — scope to a specific file: `/pilot:[name] src/api/auth.ts`
+- **Directory** — scope to a directory: `/pilot:[name] src/api/`
+- **[recipe-specific flags if any]**
 
 ## Prerequisites
 
@@ -806,10 +824,12 @@ description: Use when [specific trigger]. [Keywords for discovery].
 
 ## The Prompt
 
-Use this with `afk-loop.sh` or run manually with `/pilot:once`:
+Use this with `afk-loop.sh` or run manually with `/pilot:once`.
+
+If arguments were provided, the prompt MUST scope all operations to the specified path/filter. For example, if the user ran `/pilot:types src/api/`, only search for and fix types in `src/api/`.
 
 ```
-[the full prompt for this loop type]
+[the full prompt for this loop type, including scope instruction]
 ```
 
 ## Setup
@@ -843,6 +863,15 @@ description: Use when improving test coverage, finding untested code paths, or t
 
 Iteratively write tests for uncovered code paths until coverage hits your target.
 
+## Arguments
+
+Optional scope: `/pilot:coverage [path] [--target N]`
+
+- **No arguments** — covers entire codebase, default 80% target
+- **Directory** — scope to directory: `/pilot:coverage src/lib/`
+- **Target** — custom target: `/pilot:coverage --target 90`
+- **Both** — `/pilot:coverage src/lib/ --target 95`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -875,15 +904,17 @@ Replace the prompt in your `afk-loop.sh` with:
 @coverage-report.txt @progress.txt @.claude/pilot.yaml
 You are PILOT running a test coverage loop.
 
-1. Read the coverage report. Find the most critical uncovered code paths.
+SCOPE: [if path provided, insert here; otherwise "entire codebase"]
+TARGET: [if --target provided, use that; otherwise 80%]
+
+1. Read the coverage report. Find the most critical uncovered code paths within SCOPE.
 2. Write tests for ONE uncovered area — prioritize business logic over utilities.
 3. Run the test suite to verify new tests pass.
 4. Regenerate coverage report and update coverage-report.txt.
 5. Run all feedback loops from pilot.yaml.
 6. Commit if all pass. Include coverage-report.txt and progress.txt.
 7. Append to progress.txt: what you tested, coverage before/after.
-8. Target: 80% coverage minimum (or as specified).
-9. If coverage target is met, output <promise>COMPLETE</promise>.
+8. If coverage meets TARGET within SCOPE, output <promise>COMPLETE</promise>.
 
 ONE test file per iteration. Sacrifice grammar for concision in progress.txt.
 ```
@@ -910,6 +941,14 @@ description: Use when fixing lint errors, resolving linting violations, or clean
 
 Fix lint violations one by one with verification between each fix.
 
+## Arguments
+
+Optional scope: `/pilot:lint-fix [path]`
+
+- **No arguments** — fixes all lint errors across codebase
+- **File** — fix one file: `/pilot:lint-fix src/api/auth.ts`
+- **Directory** — scope to directory: `/pilot:lint-fix src/components/`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -928,9 +967,10 @@ Replace the prompt in your `afk-loop.sh` with:
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a lint fix loop.
+SCOPE: [if path provided, insert here; otherwise "entire codebase"]
 
-1. Run the lint command from pilot.yaml.
-2. Pick ONE lint error — prioritize errors over warnings.
+1. Run the lint command from pilot.yaml, scoped to SCOPE if provided.
+2. Pick ONE lint error within SCOPE — prioritize errors over warnings.
 3. Fix it with the minimal change needed.
 4. Run lint again to verify the fix didn't introduce new errors.
 5. Run all other feedback loops from pilot.yaml.
@@ -962,6 +1002,13 @@ description: Use when reducing code duplication, finding copy-pasted code, or re
 # PILOT Duplication — Code Clone Cleanup
 
 Find duplicate code and refactor into shared utilities.
+
+## Arguments
+
+Optional scope: `/pilot:duplication [path]`
+
+- **No arguments** — scans entire codebase
+- **Directory** — scope to directory: `/pilot:duplication src/`
 
 ## Prerequisites
 
@@ -1009,6 +1056,13 @@ description: Use when cleaning up code smells, removing dead code, fixing incons
 # PILOT Entropy — Code Smell Cleanup
 
 Software entropy in reverse. Scan for code smells and clean them up one at a time.
+
+## Arguments
+
+Optional scope: `/pilot:entropy [path]`
+
+- **No arguments** — scans entire codebase
+- **Directory** — scope to directory: `/pilot:entropy src/legacy/`
 
 ## Prerequisites
 
@@ -1060,6 +1114,14 @@ description: Use when updating outdated dependencies, upgrading packages, or pat
 
 Upgrade dependencies one at a time with verification between each.
 
+## Arguments
+
+Optional scope: `/pilot:deps [filter]`
+
+- **No arguments** — checks all outdated dependencies
+- **Package name** — update one package: `/pilot:deps react`
+- **Scope** — filter by scope: `/pilot:deps @types/`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -1107,6 +1169,14 @@ description: Use when tightening TypeScript types, removing any types, adding ty
 
 Incrementally tighten TypeScript types across a codebase.
 
+## Arguments
+
+Optional scope: `/pilot:types [path]`
+
+- **No arguments** — searches entire codebase for `any` types
+- **File path** — fix types in one file: `/pilot:types src/api/auth.ts`
+- **Directory** — scope to directory: `/pilot:types src/api/`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -1118,20 +1188,23 @@ Incrementally tighten TypeScript types across a codebase.
 
 Finds files with `any` types or type errors, fixes ONE file per iteration, verifies with typecheck and tests, and repeats until the codebase is strictly typed.
 
+If arguments were provided, scope all operations to the specified path.
+
 ## The Prompt
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a type strictness loop.
+SCOPE: [if arguments provided, insert path here; otherwise "entire codebase"]
 
-1. Search for files using `any` type or with type errors.
+1. Search for files using `any` type or with type errors within SCOPE.
 2. Pick ONE file — prioritize core business logic over utilities.
 3. Replace `any` with proper types. Add missing type annotations.
 4. Run typecheck (from pilot.yaml) to verify — must pass with no new errors.
 5. Run all other feedback loops.
 6. Commit if all pass. Include progress.txt.
 7. Append to progress.txt: file, number of `any` removed, types added.
-8. If no `any` types or type errors remain, output <promise>COMPLETE</promise>.
+8. If no `any` types or type errors remain in SCOPE, output <promise>COMPLETE</promise>.
 
 ONE file per iteration.
 ```
@@ -1139,7 +1212,12 @@ ONE file per iteration.
 ## Launch
 
 ```bash
+# Whole codebase
 ./afk-loop.sh 30
+
+# Scoped to a directory
+# Edit the SCOPE line in afk-loop.sh prompt to: src/api/
+./afk-loop.sh 10
 ```
 ```
 
@@ -1153,6 +1231,14 @@ description: Use when generating API documentation, adding JSDoc comments, docum
 # PILOT Docs — API Documentation Loop
 
 Generate or update API documentation from source code.
+
+## Arguments
+
+Optional scope: `/pilot:docs [path]`
+
+- **No arguments** — documents all undocumented public APIs
+- **File** — document one file: `/pilot:docs src/api/auth.ts`
+- **Directory** — scope to directory: `/pilot:docs src/lib/`
 
 ## Prerequisites
 
@@ -1202,6 +1288,13 @@ description: Use when migrating code patterns across a codebase, converting clas
 # PILOT Migrate — Pattern Migration Loop
 
 Apply a systematic code migration across a codebase, one file at a time.
+
+## Arguments
+
+Optional scope: `/pilot:migrate [path]`
+
+- **No arguments** — migrates across entire codebase
+- **Directory** — scope to directory: `/pilot:migrate src/components/`
 
 ## Prerequisites
 
@@ -1263,6 +1356,13 @@ description: Use when improving accessibility, fixing WCAG violations, adding AR
 
 Incrementally improve accessibility across a frontend codebase.
 
+## Arguments
+
+Optional scope: `/pilot:a11y [url]`
+
+- **No arguments** — audits `http://localhost:3000`
+- **URL** — audit specific page: `/pilot:a11y http://localhost:3000/dashboard`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -1315,6 +1415,13 @@ description: Use when auditing code for security vulnerabilities, fixing npm aud
 
 Find and fix security issues one at a time.
 
+## Arguments
+
+Optional scope: `/pilot:security [path]`
+
+- **No arguments** — audits entire codebase
+- **Directory** — scope to directory: `/pilot:security src/routes/`
+
 ## Prerequisites
 
 | Prerequisite | Check |
@@ -1366,6 +1473,14 @@ description: Use when processing GitHub issues into PRs, automating issue implem
 # PILOT Triage — Issue Triage Loop
 
 Process GitHub issues into branches and PRs automatically.
+
+## Arguments
+
+Optional scope: `/pilot:triage [filter]`
+
+- **No arguments** — processes issues labeled `ready`
+- **Label** — filter by label: `/pilot:triage --label bug`
+- **Milestone** — filter by milestone: `/pilot:triage --milestone v2.0`
 
 ## Prerequisites
 
