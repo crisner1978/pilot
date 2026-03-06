@@ -159,7 +159,8 @@ Key behaviors:
 - **One task per invocation** — prevents context rot
 - **Feedback loops are blocking** — no commit without green
 - **Retry is bounded** — 3 attempts to fix a failing loop, then escalate to human
-- **Progress is structured** — includes task ID, files changed, decisions made
+- **Progress is committed** — progress.txt and PRD.md included in every commit
+- **Progress is concise** — sacrifice grammar for concision, future iterations skip exploration
 
 ## AFK Loop (`/pilot:afk` + `afk-loop.sh`)
 
@@ -241,25 +242,34 @@ quality:
 
 ## Progress File Format
 
-Structured enough for the next iteration to pick up context without re-exploring:
+Keep entries concise. Sacrifice grammar for the sake of concision. This file helps future iterations skip exploration.
+
+Committed to the repo after each iteration — it belongs in git history so future iterations and humans can trace what happened.
 
 ```markdown
-## Iteration 1 — 2026-03-06 10:32
-**Task:** Set up Vitest with jsdom (PRD #1)
-**Status:** Complete
-**Files:** vitest.config.ts, src/__tests__/smoke.test.ts, package.json
-**Decisions:** Used jsdom over happy-dom for Next.js compat
-**Feedback:** typecheck ✓ test ✓ lint ✓
-**Commit:** a1b2c3d
+## 1 — PRD #1: Set up Vitest with jsdom
+files: vitest.config.ts, src/__tests__/smoke.test.ts, package.json
+decisions: jsdom over happy-dom, Next.js compat
+feedback: typecheck ✓ test ✓ lint ✓
+commit: a1b2c3d
 
-## Iteration 2 — 2026-03-06 10:48
-**Task:** Add user authentication endpoint (PRD #3)
-**Status:** Complete
-**Files:** src/api/auth.ts, src/api/auth.test.ts, src/middleware/session.ts
-**Decisions:** JWT over sessions — stateless, fits edge runtime
-**Feedback:** typecheck ✓ test ✓ lint ✓
-**Commit:** d4e5f6g
+## 2 — PRD #3: Add user authentication endpoint
+files: src/api/auth.ts, src/api/auth.test.ts, src/middleware/session.ts
+decisions: JWT over sessions, stateless for edge runtime
+feedback: typecheck ✓ test ✓ lint ✓
+commit: d4e5f6g
 ```
+
+For failures:
+```markdown
+## 3 — PRD #4: Add rate limiting middleware
+status: FAILED — test
+error: vitest timeout on concurrent request test
+attempted: increased timeout, simplified test, mocked timer
+needs: human to review test design for race condition
+```
+
+**Cleanup:** Delete `progress.txt` after the sprint is done. It's session-specific context, not permanent documentation.
 
 ## Alternative Loop Types
 
