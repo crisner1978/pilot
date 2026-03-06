@@ -231,6 +231,7 @@ gaps:
 
 loop:
   type: feature                  # feature | test-coverage | lint-fix | refactor | issues
+  output: commit                 # commit (default) | pr (branch + PR per task)
   iterations: 20                 # max iterations for AFK
   sandbox: true                  # use Docker sandbox for AFK
   retries: 3                     # max fix attempts per feedback loop
@@ -271,6 +272,24 @@ needs: human to review test design for race condition
 
 **Cleanup:** Delete `progress.txt` after the sprint is done. It's session-specific context, not permanent documentation.
 
+## Output Modes
+
+Configured via `loop.output` in pilot.yaml:
+
+| Mode | Behavior |
+|------|----------|
+| `commit` (default) | Commit directly to current branch after each task |
+| `pr` | Create a branch (`pilot/task-N`) and open a PR per task via `gh pr create` |
+
+PR mode is useful for teams with review processes — PILOT triages, implements, and opens the PR. You review when ready.
+
+When `output: pr`, the commit step becomes:
+1. `git checkout -b pilot/task-N-[short-description]`
+2. Commit changes (including progress.txt and PRD.md)
+3. `git push -u origin pilot/task-N-[short-description]`
+4. `gh pr create --title "[type]: [description]" --body "PILOT automated PR for PRD #N"`
+5. `git checkout [original branch]` — return for next task
+
 ## Alternative Loop Types
 
 Configured via `loop.type` in pilot.yaml:
@@ -282,6 +301,8 @@ Configured via `loop.type` in pilot.yaml:
 | `lint-fix` | Lint violations | lint passes |
 | `refactor` | Code duplication (jscpd) | duplication score |
 | `issues` | GitHub Issues | typecheck + test + lint |
+
+Alternative loop types use the same loop mechanics — only the prompt changes. See `docs/recipes.md` for copy-paste prompts for each loop type.
 
 ## HITL vs AFK Guidance
 

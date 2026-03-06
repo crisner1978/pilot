@@ -207,6 +207,9 @@ Ask the user one question at a time:
 **Question 1:** "Where should tasks come from?"
 - Options: Local (describe what to build), GitHub Issues, Both
 
+**Question 2:** "How should completed tasks be delivered?"
+- Options: Commit directly to current branch (default, good for solo work), Create a branch + PR per task (good for teams with review processes)
+
 **If Local:**
 - Ask: "What are we building? Describe the feature, fix, or goal."
 - Break the response into atomic tasks (one logical change each)
@@ -292,6 +295,7 @@ gaps: [list of {loop: reason} or empty]
 
 loop:
   type: feature
+  output: commit                 # commit (default) | pr (branch + PR per task)
   iterations: 20
   sandbox: true
   retries: 3
@@ -494,11 +498,24 @@ When stopping on failure:
 
 ### 6. Commit
 
-Only after ALL feedback loops pass. Include progress.txt and PRD.md in the commit:
+Only after ALL feedback loops pass. Check `pilot.yaml` for `loop.output` mode:
+
+**If `output: commit` (default):**
 
 ```bash
 git add [specific files you changed] progress.txt PRD.md
 git commit -m "[type]: [description of what this task accomplished]"
+```
+
+**If `output: pr`:**
+
+```bash
+git checkout -b pilot/task-[N]-[short-description]
+git add [specific files you changed] progress.txt PRD.md
+git commit -m "[type]: [description of what this task accomplished]"
+git push -u origin pilot/task-[N]-[short-description]
+gh pr create --title "[type]: [description]" --body "PILOT automated PR for PRD #[N]"
+git checkout [original branch]
 ```
 
 Use conventional commit types: `feat`, `fix`, `refactor`, `test`, `chore`, `docs`.
@@ -737,7 +754,200 @@ git commit -m "feat: add /pilot:afk skill — AFK autonomous loop launcher"
 
 ---
 
-### Task 5: Final integration commit and push
+### Task 5: Write `docs/recipes.md` — alternative loop prompts
+
+**Files:**
+- Create: `docs/recipes.md`
+
+**Step 1: Write the recipes doc**
+
+Write the following content to `docs/recipes.md`:
+
+```markdown
+# PILOT Recipes
+
+Alternative loop prompts you can use with PILOT. The loop mechanics are the same — only the prompt changes. Swap these into your `afk-loop.sh` or use them with `/pilot:once`.
+
+## From RALPH
+
+### Test Coverage Loop
+
+Point PILOT at your coverage metrics. It finds uncovered lines, writes tests, and iterates until coverage hits your target.
+
+```
+@coverage-report.txt @progress.txt @.claude/pilot.yaml
+Read the coverage report. Find the most critical uncovered code paths.
+Write tests for ONE uncovered area. Run coverage again.
+Update coverage-report.txt with new results.
+Update progress.txt with what you tested.
+Commit if tests pass. Target: 80% coverage minimum.
+If coverage target is met, output <promise>COMPLETE</promise>.
+```
+
+Generate coverage first: `vitest run --coverage > coverage-report.txt`
+
+### Linting Loop
+
+Fix lint violations one by one with verification between each fix.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run the lint command from pilot.yaml. Pick ONE error.
+Fix it. Run lint again to verify the fix didn't introduce new errors.
+Update progress.txt. Commit.
+If no lint errors remain, output <promise>COMPLETE</promise>.
+```
+
+### Duplication Loop
+
+Uses jscpd to identify code clones, refactors into shared utilities.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run: npx jscpd --min-lines 5 --min-tokens 50 .
+Pick the highest-impact duplicate. Refactor into a shared utility.
+Run all feedback loops. Update progress.txt. Commit.
+If no significant duplicates remain, output <promise>COMPLETE</promise>.
+```
+
+Install first: `npm i -D jscpd`
+
+### Entropy Loop
+
+Scan for code smells and clean them up — software entropy in reverse.
+
+```
+@progress.txt @.claude/pilot.yaml
+Scan the codebase for ONE code smell: unused exports, dead code,
+inconsistent naming, orphaned files, deprecated API usage.
+Fix it. Run all feedback loops. Update progress.txt. Commit.
+If the codebase is clean, output <promise>COMPLETE</promise>.
+```
+
+## PILOT Originals
+
+### Dependency Update Loop
+
+Upgrade dependencies one at a time with verification between each.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run: npm outdated (or equivalent for your package manager).
+Pick ONE outdated dependency — prioritize security patches, then major versions.
+Update it. Run all feedback loops.
+If breaking changes, fix them. If unfixable, revert and note in progress.txt.
+Commit if all loops pass. Update progress.txt.
+If all dependencies are current, output <promise>COMPLETE</promise>.
+```
+
+### Type Strictness Loop
+
+Incrementally tighten TypeScript strictness across a codebase.
+
+```
+@progress.txt @.claude/pilot.yaml
+Pick ONE file that has type errors or uses `any`.
+Fix the types — replace `any` with proper types, add missing annotations.
+Run typecheck and tests. Commit if passing. Update progress.txt.
+If no `any` types or type errors remain, output <promise>COMPLETE</promise>.
+```
+
+### API Documentation Loop
+
+Generate or update API documentation from source code.
+
+```
+@progress.txt @.claude/pilot.yaml
+Find ONE public function, class, or endpoint missing documentation.
+Write clear, concise JSDoc/docstring with params, return type, and one example.
+Run all feedback loops. Commit. Update progress.txt.
+If all public APIs are documented, output <promise>COMPLETE</promise>.
+```
+
+### Migration Loop
+
+Apply a pattern migration across a codebase (e.g., class components to hooks, CommonJS to ESM).
+
+```
+@progress.txt @.claude/pilot.yaml @MIGRATION.md
+Read MIGRATION.md for the migration pattern (before/after examples).
+Find ONE file that still uses the old pattern.
+Migrate it to the new pattern. Run all feedback loops.
+Commit. Update progress.txt.
+If no files use the old pattern, output <promise>COMPLETE</promise>.
+```
+
+Create a `MIGRATION.md` with before/after code examples for your specific migration.
+
+### Accessibility Loop
+
+Incrementally improve accessibility across a frontend codebase.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run: npx axe-cli http://localhost:3000 (or use browser MCP to audit).
+Pick ONE accessibility violation — prioritize critical/serious.
+Fix it. Verify with axe or browser MCP. Run all feedback loops.
+Commit. Update progress.txt.
+If no violations remain, output <promise>COMPLETE</promise>.
+```
+
+### Security Audit Loop
+
+Find and fix security issues one at a time.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run: npm audit (or equivalent). Also scan for common OWASP issues:
+hardcoded secrets, SQL injection, XSS, missing input validation.
+Pick ONE issue — prioritize high/critical severity.
+Fix it. Run all feedback loops. Commit. Update progress.txt.
+If no security issues remain, output <promise>COMPLETE</promise>.
+```
+
+### Issue Triage Loop
+
+Process GitHub issues into branches and PRs automatically.
+
+```
+@progress.txt @.claude/pilot.yaml
+Run: gh issue list --limit 10 --state open --label "ready"
+Pick the highest-priority issue. Read it fully.
+Create branch: pilot/issue-[number]-[short-description]
+Implement the fix/feature. Run all feedback loops.
+Commit, push, open PR referencing the issue.
+Update progress.txt. Return to main branch.
+If no "ready" issues remain, output <promise>COMPLETE</promise>.
+```
+
+Requires: `gh` CLI authenticated, issues labeled "ready" for automation.
+
+## Writing Your Own Recipe
+
+Any task that fits this pattern works as a PILOT recipe:
+
+1. Look at something (code, metrics, reports, issues)
+2. Pick ONE thing to improve
+3. Fix it
+4. Verify the fix (feedback loops)
+5. Commit + log progress
+6. Check if done
+
+The loop is always the same. Only the prompt changes.
+```
+
+Write this to `docs/recipes.md`.
+
+**Step 2: Commit**
+
+```bash
+git add docs/recipes.md
+git commit -m "docs: add recipes for alternative loop types"
+```
+
+---
+
+### Task 6: Final integration commit and push
 
 **Files:**
 - Verify: all files in correct locations
@@ -752,6 +962,7 @@ Expected:
 README.md
 docs/design.md
 docs/plans/2026-03-06-pilot-implementation.md
+docs/recipes.md
 scripts/afk-loop.sh
 skills/afk/SKILL.md
 skills/once/SKILL.md
