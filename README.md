@@ -13,12 +13,28 @@ Inspired by [RALPH](https://www.aihero.dev/getting-started-with-ralph).
 /plugin install pilot
 ```
 
-## Usage
+## Commands
 
+### Core
 ```bash
-/pilot:plan   # Interactive setup — generates PRD + config from questions + auto-detection
-/pilot:once   # Execute one task (HITL — human in the loop)
-/pilot:afk    # Launch autonomous loop (AFK — away from keyboard)
+/pilot:plan       # Interactive setup — generates PRD + config
+/pilot:once       # Execute one task (HITL)
+/pilot:afk        # Launch autonomous loop (AFK)
+```
+
+### Recipes
+```bash
+/pilot:coverage      # Test coverage loop
+/pilot:lint-fix      # Fix lint violations
+/pilot:duplication   # Refactor code clones
+/pilot:entropy       # Clean up code smells
+/pilot:deps          # Update dependencies
+/pilot:types         # Tighten TypeScript types
+/pilot:docs          # Generate API documentation
+/pilot:migrate       # Pattern migration
+/pilot:a11y          # Accessibility audit
+/pilot:security      # Security audit
+/pilot:triage        # GitHub issue → PR automation
 ```
 
 ## How It Works
@@ -34,4 +50,4 @@ Inspired by [RALPH](https://www.aihero.dev/getting-started-with-ralph).
 - **Progress tracking** — each iteration builds on the last without re-exploring
 - **Start HITL, graduate to AFK** — master the loop before going autonomous
 
-See [docs/design.md](docs/design.md) for the full design document.
+See [docs/design.md](docs/design.md) for the full design document and [docs/recipes.md](docs/recipes.md) for recipe details.
