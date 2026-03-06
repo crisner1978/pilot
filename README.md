@@ -9,8 +9,13 @@ Inspired by [RALPH](https://www.aihero.dev/getting-started-with-ralph).
 ## Install
 
 ```bash
-/plugin marketplace add github:crisner1978/pilot
-/plugin install pilot
+claude plugin marketplace add github:crisner1978/pilot
+claude plugin install pilot
+```
+
+For local development/testing:
+```bash
+claude --plugin-dir /path/to/pilot
 ```
 
 ## Commands
