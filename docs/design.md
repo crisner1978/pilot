@@ -311,6 +311,12 @@ Alternative loop types use the same loop mechanics — only the prompt changes. 
 - **Risky tasks stay HITL** — architecture, design, integration points
 - **Routine tasks go AFK** — bug fixes, refactors, test coverage, lint fixes
 
+## v0.2 Roadmap
+
+- **npx CLI installer** — `npx @crisner1978/pilot init` to install skills from any terminal without being inside Claude Code
+- **Custom recipe authoring** — `/pilot:recipe create` to scaffold a new recipe skill from a template
+- **Parallel worktree execution** — run independent tasks in separate git worktrees simultaneously
+
 ## Key Principles (from RALPH)
 
 1. **Feedback loops are non-negotiable** — they block low-quality code propagation
