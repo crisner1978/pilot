@@ -9,7 +9,7 @@ Inspired by [RALPH](https://www.aihero.dev/getting-started-with-ralph).
 ## Install
 
 ```bash
-/plugin marketplace add github:dot-do/pilot
+/plugin marketplace add github:crisner1978/pilot
 /plugin install pilot
 ```
 

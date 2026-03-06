@@ -15,7 +15,7 @@ A portable Claude Code plugin that turns AI agents into autonomous software engi
 Packaged as a Claude Code plugin, distributed via GitHub:
 
 ```
-pilot/                              # github.com/dot-do/pilot
+pilot/                              # github.com/crisner1978/pilot
 ├── .claude-plugin/
 │   └── plugin.json                 # manifest (name, version, description)
 ├── skills/
@@ -30,7 +30,7 @@ pilot/                              # github.com/dot-do/pilot
 **Installation:**
 ```bash
 # Add marketplace (one time)
-/plugin marketplace add github:dot-do/pilot
+/plugin marketplace add github:crisner1978/pilot
 
 # Install
 /plugin install pilot

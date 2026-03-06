@@ -3,9 +3,9 @@
   "description": "PILOT — Plan, Iterate, Loop, Observe, Test. Autonomous AI coding agent loops with structured PRDs, auto-detected feedback loops, and pluggable task sources.",
   "version": "0.1.0",
   "author": {
-    "name": "dot-do"
+    "name": "crisner1978"
   },
-  "homepage": "https://github.com/dot-do/pilot",
-  "repository": "https://github.com/dot-do/pilot",
+  "homepage": "https://github.com/crisner1978/pilot",
+  "repository": "https://github.com/crisner1978/pilot",
   "license": "MIT"
 }
