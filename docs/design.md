@@ -19,24 +19,37 @@ pilot/                              # github.com/crisner1978/pilot
 ├── .claude-plugin/
 │   └── plugin.json                 # manifest (name, version, description)
 ├── skills/
-│   ├── plan/SKILL.md               # /pilot:plan — interactive setup
+│   ├── plan/                       # /pilot:plan — interactive setup
+│   │   ├── SKILL.md
+│   │   ├── assets/                 # PRD, yaml, progress templates
+│   │   └── references/             # stack detection table
 │   ├── once/SKILL.md               # /pilot:once — HITL, one task
-│   └── afk/SKILL.md                # /pilot:afk — autonomous loop
+│   ├── afk/                        # /pilot:afk — autonomous loop
+│   │   ├── SKILL.md
+│   │   └── scripts/                # readiness validation
+│   ├── migrate/                    # /pilot:migrate — pattern migration
+│   │   ├── SKILL.md
+│   │   └── assets/                 # MIGRATION.md template
+│   └── [9 more recipe skills]/    # coverage, lint-fix, duplication, entropy,
+│       └── SKILL.md                # deps, types, docs, a11y, security, triage
 ├── scripts/
 │   └── afk-loop.sh                 # bash loop template
+├── docs/
+│   ├── design.md
+│   └── recipes.md                  # recipe reference + custom recipe guide
 └── README.md
 ```
 
 **Installation:**
 ```bash
 # Add marketplace (one time)
-/plugin marketplace add github:crisner1978/pilot
+claude plugin marketplace add github:crisner1978/pilot
 
 # Install
-/plugin install pilot
+claude plugin install pilot
 ```
 
-**Usage:** `/pilot:plan`, `/pilot:once`, `/pilot:afk`
+**Usage:** `/pilot:plan`, `/pilot:once`, `/pilot:afk`, plus 11 recipe skills (see `docs/recipes.md`)
 
 ## Goals
 
@@ -290,19 +303,25 @@ When `output: pr`, the commit step becomes:
 4. `gh pr create --title "[type]: [description]" --body "PILOT automated PR for PRD #N"`
 5. `git checkout [original branch]` — return for next task
 
-## Alternative Loop Types
+## Recipe Skills
 
-Configured via `loop.type` in pilot.yaml:
+Beyond the core `plan`/`once`/`afk` workflow, PILOT ships 11 recipe skills — each a specialized loop that uses the same mechanics with a different prompt:
 
-| Loop Type | Task Source | Feedback |
-|-----------|-----------|----------|
-| `feature` | PRD checklist | typecheck + test + lint |
-| `test-coverage` | Uncovered lines (lcov) | coverage threshold |
-| `lint-fix` | Lint violations | lint passes |
-| `refactor` | Code duplication (jscpd) | duplication score |
-| `issues` | GitHub Issues | typecheck + test + lint |
+| Skill | Command | What It Does |
+|-------|---------|-------------|
+| Coverage | `/pilot:coverage` | Write tests for uncovered code paths |
+| Lint Fix | `/pilot:lint-fix` | Fix lint violations one by one |
+| Duplication | `/pilot:duplication` | Find code clones, refactor into shared utilities |
+| Entropy | `/pilot:entropy` | Clean up code smells and dead code |
+| Deps | `/pilot:deps` | Update outdated dependencies one at a time |
+| Types | `/pilot:types` | Remove `any` types, tighten TypeScript strictness |
+| Docs | `/pilot:docs` | Generate JSDoc/docstrings for public APIs |
+| Migrate | `/pilot:migrate` | Apply pattern migration across files |
+| A11y | `/pilot:a11y` | Fix accessibility violations |
+| Security | `/pilot:security` | Find and fix security vulnerabilities |
+| Triage | `/pilot:triage` | Process GitHub issues into branches and PRs |
 
-Alternative loop types use the same loop mechanics — only the prompt changes. See `docs/recipes.md` for copy-paste prompts for each loop type.
+Each recipe is a full SKILL.md with arguments, prerequisites, prompt, and launch instructions. See `docs/recipes.md` for details and a guide to writing custom recipes.
 
 ## HITL vs AFK Guidance
 
