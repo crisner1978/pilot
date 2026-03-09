@@ -1,9 +1,9 @@
 ---
-name: once
+name: run
 description: Use when executing a single task from a PILOT PRD, implementing one feature or fix with feedback loop validation before committing. Triggers on iterative development, task execution, PRD-driven coding.
 ---
 
-# PILOT Once — Execute One Task
+# PILOT Run — Execute One Task
 
 Implement exactly one task from the PRD, validate with feedback loops, commit only if all pass.
 
@@ -21,7 +21,7 @@ If any are missing, tell the user: "Run `/pilot:plan` first to set up PILOT."
 ## The Loop
 
 ```dot
-digraph once {
+digraph run {
     read [label="Read PRD.md + progress.txt + pilot.yaml", shape=box];
     pick [label="Pick highest-priority\nincomplete task", shape=box];
     implement [label="Implement the task", shape=box];
@@ -171,7 +171,7 @@ If ALL tasks in the PRD are checked off, output exactly:
 <promise>COMPLETE</promise>
 ```
 
-Otherwise, report what was done and stop. The human (or afk-loop.sh) decides whether to continue.
+Otherwise, report what was done and stop. The human (or pilot-loop.sh) decides whether to continue.
 
 ## Red Flags — STOP and Reconsider
 

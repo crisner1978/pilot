@@ -20,7 +20,7 @@ You MUST complete these phases in order:
 1. **Context scan** — detect stack, toolchain, existing config
 2. **Gap analysis** — identify missing feedback loops, research + recommend tools
 3. **Task source** — gather tasks from user, GitHub Issues, or both
-4. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt, afk-loop.sh
+4. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt, pilot-loop.sh
 5. **Readiness check** — dry-run feedback loops, flag issues
 
 ## Phase 1 — Context Scan
@@ -167,11 +167,11 @@ Generate all four files using the templates in this skill's `assets/` directory.
 
 **File 3: `progress.txt`** — Read `assets/progress-template.txt`, fill in today's date, write to project root.
 
-**File 4: `afk-loop.sh`** — Copy the plugin's script into the project root and make it executable:
+**File 4: `pilot-loop.sh`** — Copy the plugin's script into the project root and make it executable:
 
-Run: `cp ${CLAUDE_SKILL_DIR}/../../scripts/afk-loop.sh ./afk-loop.sh && chmod +x afk-loop.sh`
+Run: `cp ${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh ./pilot-loop.sh && chmod +x pilot-loop.sh`
 
-If `${CLAUDE_SKILL_DIR}` is not available, write the script inline (see scripts/afk-loop.sh in the plugin repo for the canonical version).
+If `${CLAUDE_SKILL_DIR}` is not available, write the script inline (see scripts/pilot-loop.sh in the plugin repo for the canonical version).
 
 ## Phase 5 — Readiness Check
 
@@ -185,7 +185,7 @@ biome check .         # Should exit 0 or show only pre-existing issues
 ```
 
 Report results:
-- All pass → "PILOT is ready. Run `/pilot:once` to start, or `/pilot:afk` to go autonomous."
+- All pass → "PILOT is ready. Run `/pilot:run` to start, or `/pilot:loop` to go autonomous."
 - Some fail → "These feedback loops have pre-existing failures: [list]. Fix these first, or they'll block every iteration."
 - Missing command → "Command `[cmd]` not found. Install it or update `.claude/pilot.yaml`."
 
@@ -199,12 +199,12 @@ Generated:
   PRD.md              — [N] tasks, prioritized
   .claude/pilot.yaml  — toolchain config
   progress.txt        — ready for iteration logs
-  afk-loop.sh         — autonomous loop script
+  pilot-loop.sh         — autonomous loop script
 
 Next:
-  /pilot:once         — run one task (recommended to start)
-  /pilot:afk          — launch autonomous loop
+  /pilot:run         — run one task (recommended to start)
+  /pilot:loop          — launch autonomous loop
 
-Tip: Start with /pilot:once for 5-10 iterations to verify
-feedback loops catch issues before going AFK.
+Tip: Start with /pilot:run for 5-10 iterations to verify
+feedback loops catch issues before going autonomous.
 ```

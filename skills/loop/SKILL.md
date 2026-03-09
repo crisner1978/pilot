@@ -1,24 +1,24 @@
 ---
-name: afk
-description: Use when launching an autonomous PILOT loop to execute multiple PRD tasks without human intervention. Triggers on AFK mode, autonomous execution, batch coding, unattended development.
+name: loop
+description: Use when launching an autonomous PILOT loop to execute multiple PRD tasks without human intervention. Triggers on autonomous execution, batch coding, unattended development, continuous loop.
 ---
 
-# PILOT AFK — Autonomous Loop
+# PILOT Loop — Autonomous Execution
 
 Validate readiness and launch the autonomous execution loop.
 
-**Announce at start:** "Preparing to launch PILOT in AFK mode."
+**Announce at start:** "Preparing to launch PILOT in loop mode."
 
 ## Prerequisites
 
-Before launching AFK mode, ALL of these must be true:
+Before launching loop mode, ALL of these must be true:
 
 | Check | How |
 |-------|-----|
 | PRD.md exists | Read `PRD.md` — must have unchecked tasks |
 | pilot.yaml exists | Read `.claude/pilot.yaml` — must have feedback loops configured |
 | progress.txt exists | Read `progress.txt` — should exist (even if empty) |
-| afk-loop.sh exists | Check for `afk-loop.sh` in project root |
+| pilot-loop.sh exists | Check for `pilot-loop.sh` in project root |
 | Feedback loops work | Dry-run each command from pilot.yaml |
 
 If any prerequisite fails, tell the user what's missing and suggest: "Run `/pilot:plan` to set up PILOT."
@@ -33,7 +33,7 @@ bash ${CLAUDE_SKILL_DIR}/scripts/validate-readiness.sh
 
 If `${CLAUDE_SKILL_DIR}` is not available, perform the checks manually:
 
-1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt`, `afk-loop.sh` are all present
+1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt`, `pilot-loop.sh` are all present
 2. **Count remaining tasks** — read PRD.md, count unchecked (`- [ ]`) vs checked (`- [x]`) tasks. If all complete, nothing to run.
 3. **Dry-run feedback loops** — run each configured command from pilot.yaml, report pass/fail for each
 
@@ -43,7 +43,7 @@ If any check fails, warn the user. Pre-existing failures will burn iterations �
 
 After validation passes, present a summary and use AskUserQuestion to confirm:
 
-"Ready to launch PILOT AFK mode:
+"Ready to launch PILOT loop mode:
 - **Tasks remaining:** [N]
 - **Iteration cap:** [from pilot.yaml, default 20]
 - **Docker sandbox:** [from pilot.yaml, default recommended]
@@ -53,7 +53,7 @@ After validation passes, present a summary and use AskUserQuestion to confirm:
 {
   "questions": [
     {
-      "question": "Launch AFK mode with these settings?",
+      "question": "Launch loop mode with these settings?",
       "header": "Launch",
       "options": [
         {"label": "Launch (Recommended)", "description": "Start autonomous loop with settings shown above"},
@@ -81,15 +81,15 @@ After confirmation, provide the launch command:
 
 ```bash
 # Standard launch
-./afk-loop.sh [iterations]
+./pilot-loop.sh [iterations]
 
 # With Docker sandbox
-./afk-loop.sh [iterations] --sandbox
+./pilot-loop.sh [iterations] --sandbox
 ```
 
 Tell the user:
 ```
-PILOT AFK mode launching.
+PILOT loop mode launching.
 
 Monitor:
   tail -f progress.txt        — watch iteration logs
@@ -113,16 +113,16 @@ Welcome back! Review what PILOT did:
   git log --oneline            — commit history
   cat PRD.md                   — task completion status
 
-If tasks remain, run /pilot:afk again or /pilot:once for HITL mode.
+If tasks remain, run /pilot:loop again or /pilot:run for manual mode.
 
 Cleanup (after sprint is done):
-  rm progress.txt PRD.md afk-loop.sh .claude/pilot.yaml
+  rm progress.txt PRD.md pilot-loop.sh .claude/pilot.yaml
   These are session-specific — not permanent documentation.
 ```
 
 ## Safety Notes
 
-- **Always recommend Docker sandbox for AFK mode** — the agent has full file system access
+- **Always recommend Docker sandbox for loop mode** — the agent has full file system access
 - **Iteration cap is a safety net** — prevents runaway cost. 20 is a reasonable default for most PRDs
 - **Pre-existing failures burn iterations** — fix them before launching
-- **Review progress.txt after each AFK run** — verify the agent made good decisions
+- **Review progress.txt after each loop run** — verify the agent made good decisions

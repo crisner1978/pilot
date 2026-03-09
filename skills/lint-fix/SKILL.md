@@ -28,7 +28,7 @@ Runs the linter, picks ONE error, fixes it, re-runs the linter to verify the fix
 
 ## The Prompt
 
-Replace the prompt in your `afk-loop.sh` with:
+Replace the prompt in your `pilot-loop.sh` with:
 
 ```
 @progress.txt @.claude/pilot.yaml
@@ -51,8 +51,8 @@ ONE fix per iteration. Do not batch fixes.
 
 ```bash
 # HITL
-./afk-loop.sh 1
+./pilot-loop.sh 1
 
-# AFK — clean up all violations
-./afk-loop.sh 50
+# Autonomous — clean up all violations
+./pilot-loop.sh 50
 ```

@@ -51,5 +51,5 @@ ONE violation per iteration.
 npm run dev &
 
 # Then launch
-./afk-loop.sh 20
+./pilot-loop.sh 20
 ```

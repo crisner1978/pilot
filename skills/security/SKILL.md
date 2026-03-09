@@ -51,5 +51,5 @@ ONE vulnerability per iteration. Never introduce new vulnerabilities.
 ## Launch
 
 ```bash
-./afk-loop.sh 20
+./pilot-loop.sh 20
 ```

@@ -1,6 +1,6 @@
 # PILOT Recipes
 
-PILOT ships with 11 recipe skills beyond the core `plan`/`once`/`afk` workflow. Each recipe is a specialized loop that uses the same mechanics — only the prompt changes.
+PILOT ships with 11 recipe skills beyond the core `plan`/`run`/`loop` workflow. Each recipe is a specialized loop that uses the same mechanics — only the prompt changes.
 
 ## Available Recipes
 
@@ -45,14 +45,14 @@ Use any existing recipe skill as a template. The key constraint: **ONE action pe
 
 ## Running Recipes
 
-All recipes use the same `afk-loop.sh` script. Each recipe skill explains how to configure the prompt. You can run any recipe in HITL mode (one iteration) or AFK mode (autonomous):
+All recipes use the same `pilot-loop.sh` script. Each recipe skill explains how to configure the prompt. You can run any recipe manually (one iteration) or autonomously:
 
 ```bash
-# HITL — watch and learn
-./afk-loop.sh 1
+# Manual — watch and learn
+./pilot-loop.sh 1
 
-# AFK — let it grind
-./afk-loop.sh 20
+# Autonomous — let it grind
+./pilot-loop.sh 20
 ```
 
 Some recipes have prerequisites (jscpd, axe-cli, gh). The skill will tell you what's needed.

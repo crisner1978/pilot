@@ -51,9 +51,9 @@ ONE file per iteration.
 
 ```bash
 # Whole codebase
-./afk-loop.sh 30
+./pilot-loop.sh 30
 
 # Scoped to a directory
-# Edit the SCOPE line in afk-loop.sh prompt to: src/api/
-./afk-loop.sh 10
+# Edit the SCOPE line in pilot-loop.sh prompt to: src/api/
+./pilot-loop.sh 10
 ```

@@ -47,5 +47,5 @@ ONE dependency per iteration. Never batch updates.
 ## Launch
 
 ```bash
-./afk-loop.sh 20
+./pilot-loop.sh 20
 ```

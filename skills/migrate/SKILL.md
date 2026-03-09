@@ -45,5 +45,5 @@ ONE file per iteration. Follow MIGRATION.md exactly.
 ## Launch
 
 ```bash
-./afk-loop.sh 30
+./pilot-loop.sh 30
 ```

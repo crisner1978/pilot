@@ -49,5 +49,5 @@ ONE function/class per iteration. Keep docs concise — not novels.
 ## Launch
 
 ```bash
-./afk-loop.sh 30
+./pilot-loop.sh 30
 ```

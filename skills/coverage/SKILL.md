@@ -42,7 +42,7 @@ pytest --cov=src --cov-report=text > coverage-report.txt
 
 ## The Prompt
 
-Replace the prompt in your `afk-loop.sh` with:
+Replace the prompt in your `pilot-loop.sh` with:
 
 ```
 @coverage-report.txt @progress.txt @.claude/pilot.yaml
@@ -67,8 +67,8 @@ ONE test file per iteration. Sacrifice grammar for concision in progress.txt.
 
 ```bash
 # HITL — one test file at a time
-./afk-loop.sh 1
+./pilot-loop.sh 1
 
-# AFK — grind to 80%
-./afk-loop.sh 30
+# Autonomous — grind to 80%
+./pilot-loop.sh 30
 ```

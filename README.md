@@ -23,8 +23,8 @@ claude --plugin-dir /path/to/pilot
 ### Core
 ```bash
 /pilot:plan       # Interactive setup — generates PRD + config
-/pilot:once       # Execute one task (HITL)
-/pilot:afk        # Launch autonomous loop (AFK)
+/pilot:run        # Execute one task
+/pilot:loop       # Launch autonomous loop
 ```
 
 ### Recipes
@@ -45,14 +45,14 @@ claude --plugin-dir /path/to/pilot
 ## How It Works
 
 1. **`/pilot:plan`** scans your repo, detects your toolchain, identifies gaps in your feedback loops, recommends fixes, and generates a PRD + config
-2. **`/pilot:once`** picks the next task, implements it, runs feedback loops (typecheck, test, lint, browser), commits only if all pass
-3. **`/pilot:afk`** runs the loop autonomously with an iteration cap — agent grinds through your backlog while you're away
+2. **`/pilot:run`** picks the next task, implements it, runs feedback loops (typecheck, test, lint, browser), commits only if all pass
+3. **`/pilot:loop`** runs the loop autonomously with an iteration cap — agent grinds through your backlog while you're away
 
 ## Key Principles
 
 - **Feedback loops are non-negotiable** — no commit without green
 - **One task per iteration** — prevents context rot
 - **Progress tracking** — each iteration builds on the last without re-exploring
-- **Start HITL, graduate to AFK** — master the loop before going autonomous
+- **Start manual, graduate to autonomous** — master the loop before going hands-off
 
 See [docs/design.md](docs/design.md) for the full design document and [docs/recipes.md](docs/recipes.md) for recipe details.

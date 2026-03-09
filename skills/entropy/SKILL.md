@@ -49,5 +49,5 @@ ONE smell per iteration. Don't scope-creep into refactoring.
 ## Launch
 
 ```bash
-./afk-loop.sh 30
+./pilot-loop.sh 30
 ```

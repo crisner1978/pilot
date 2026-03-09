@@ -1,19 +1,19 @@
 #!/bin/bash
-# PILOT AFK — Readiness Validation
-# Checks that all prerequisites are met before launching AFK mode.
+# PILOT Loop — Readiness Validation
+# Checks that all prerequisites are met before launching loop mode.
 # Usage: ./validate-readiness.sh
 
 set -e
 
-echo "PILOT AFK — Readiness Check"
-echo "============================"
+echo "PILOT Loop — Readiness Check"
+echo "============================="
 echo ""
 
 READY=true
 
 # 1. Check required files
 echo "Files:"
-for file in PRD.md .claude/pilot.yaml progress.txt afk-loop.sh; do
+for file in PRD.md .claude/pilot.yaml progress.txt pilot-loop.sh; do
   if test -f "$file"; then
     echo "  $file ✓"
   else

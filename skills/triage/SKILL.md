@@ -50,5 +50,5 @@ ONE issue per iteration. Create clean, reviewable PRs.
 ## Launch
 
 ```bash
-./afk-loop.sh 10
+./pilot-loop.sh 10
 ```

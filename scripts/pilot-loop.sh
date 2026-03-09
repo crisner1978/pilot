@@ -2,8 +2,8 @@
 set -e
 
 # PILOT — Plan, Iterate, Loop, Observe, Test
-# AFK autonomous loop script
-# Usage: ./afk-loop.sh [iterations] [--sandbox]
+# Autonomous loop script
+# Usage: ./pilot-loop.sh [iterations] [--sandbox]
 
 ITERATIONS=${1:-20}
 SANDBOX=false
@@ -20,7 +20,7 @@ if [ "$SANDBOX" = true ]; then
 fi
 
 PROMPT='@PRD.md @progress.txt @.claude/pilot.yaml
-You are PILOT — an autonomous coding agent running in AFK mode.
+You are PILOT — an autonomous coding agent running in loop mode.
 
 1. Read the PRD, progress file, and pilot config.
 2. Find the highest-priority INCOMPLETE task (unchecked checkbox).

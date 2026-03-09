@@ -23,8 +23,8 @@ pilot/                              # github.com/crisner1978/pilot
 │   │   ├── SKILL.md
 │   │   ├── assets/                 # PRD, yaml, progress templates
 │   │   └── references/             # stack detection table
-│   ├── once/SKILL.md               # /pilot:once — HITL, one task
-│   ├── afk/                        # /pilot:afk — autonomous loop
+│   ├── run/SKILL.md                # /pilot:run — execute one task
+│   ├── loop/                       # /pilot:loop — autonomous loop
 │   │   ├── SKILL.md
 │   │   └── scripts/                # readiness validation
 │   ├── migrate/                    # /pilot:migrate — pattern migration
@@ -33,7 +33,7 @@ pilot/                              # github.com/crisner1978/pilot
 │   └── [9 more recipe skills]/    # coverage, lint-fix, duplication, entropy,
 │       └── SKILL.md                # deps, types, docs, a11y, security, triage
 ├── scripts/
-│   └── afk-loop.sh                 # bash loop template
+│   └── pilot-loop.sh                 # bash loop template
 ├── docs/
 │   ├── design.md
 │   └── recipes.md                  # recipe reference + custom recipe guide
@@ -49,7 +49,7 @@ claude plugin marketplace add github:crisner1978/pilot
 claude plugin install pilot
 ```
 
-**Usage:** `/pilot:plan`, `/pilot:once`, `/pilot:afk`, plus 11 recipe skills (see `docs/recipes.md`)
+**Usage:** `/pilot:plan`, `/pilot:run`, `/pilot:loop`, plus 11 recipe skills (see `docs/recipes.md`)
 
 ## Goals
 
@@ -57,7 +57,7 @@ claude plugin install pilot
 - **Zero-config start** — auto-detects toolchain, generates config through questions, never requires manual authoring
 - **Pluggable task sources** — local PRD files, GitHub Issues, or both, with adapter interface for others
 - **Context-driven feedback** — auto-detects available tools, recommends and bootstraps missing ones
-- **Two modes** — HITL (one task, human watches) and AFK (autonomous loop with iteration cap)
+- **Two modes** — manual (one task, human watches) and autonomous (loop with iteration cap)
 
 ## System Architecture
 
@@ -66,9 +66,9 @@ claude plugin install pilot
 | Component | Purpose | Mode |
 |-----------|---------|------|
 | `/pilot:plan` | Interactive setup — generates PRD + config from questions + auto-detection | HITL |
-| `/pilot:once` | Execute one task from the PRD, commit, update progress | HITL |
-| `/pilot:afk` | Validate readiness and launch the AFK loop script | AFK |
-| `afk-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel | AFK |
+| `/pilot:run` | Execute one task from the PRD, commit, update progress | Manual |
+| `/pilot:loop` | Validate readiness and launch the loop script | Autonomous |
+| `pilot-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel | Autonomous |
 
 ### File Convention
 
@@ -79,7 +79,7 @@ Files generated into the user's project:
 ├── pilot.yaml             # Generated config (toolchain, sources, feedback loops)
 PRD.md                     # Generated task backlog (checklist format)
 progress.txt               # Append-only structured log of completed work
-afk-loop.sh                # Pre-configured bash loop script
+pilot-loop.sh                # Pre-configured bash loop script
 ```
 
 ### Flow
@@ -90,10 +90,10 @@ afk-loop.sh                # Pre-configured bash loop script
     ├── Auto-detects: vitest, tsc, eslint, biome, playwright, jest, pytest...
     ├── Gap analysis: identifies missing feedback loops, web searches for best tool
     ├── Recommends: "No linter — Biome recommended for this stack. Add setup to PRD?"
-    ├── Generates: PRD.md + .claude/pilot.yaml + progress.txt + afk-loop.sh
+    ├── Generates: PRD.md + .claude/pilot.yaml + progress.txt + pilot-loop.sh
     └── Verifies: feedback loops actually run (dry run)
 
-/pilot:once (one task)
+/pilot:run (one task, manual)
     ├── Reads: PRD.md + progress.txt + pilot.yaml
     ├── Picks highest-priority incomplete task
     ├── Implements it
@@ -101,11 +101,11 @@ afk-loop.sh                # Pre-configured bash loop script
     ├── Commits only if all pass (retries up to 3x, then escalates)
     └── Appends structured entry to progress.txt
 
-/pilot:afk (autonomous)
+/pilot:loop (autonomous loop)
     ├── Validates PRD.md and pilot.yaml exist
     ├── Dry-runs feedback loops
     ├── Confirms iteration cap and sandbox preference
-    └── Launches afk-loop.sh
+    └── Launches pilot-loop.sh
 ```
 
 ## Planning Skill (`/pilot:plan`)
@@ -139,14 +139,14 @@ The brain of the system. Interactive, one-question-at-a-time.
 - `PRD.md` — prioritized task checklist with validation criteria per task
 - `.claude/pilot.yaml` — toolchain config, feedback loops, task source, iteration limits, gaps
 - `progress.txt` — empty, ready to go
-- `afk-loop.sh` — pre-configured with iteration cap from config
+- `pilot-loop.sh` — pre-configured with iteration cap from config
 
 ### Phase 5 — Readiness Check
 
 - Verify feedback loops actually run (e.g., `vitest run` doesn't error on empty suite)
 - Flag any issues before the first iteration starts
 
-## Execution Skill (`/pilot:once`)
+## Run Skill (`/pilot:run`)
 
 ```
 Read PRD.md + progress.txt + pilot.yaml
@@ -175,15 +175,15 @@ Key behaviors:
 - **Progress is committed** — progress.txt and PRD.md included in every commit
 - **Progress is concise** — sacrifice grammar for concision, future iterations skip exploration
 
-## AFK Loop (`/pilot:afk` + `afk-loop.sh`)
+## Loop Skill (`/pilot:loop` + `pilot-loop.sh`)
 
 The skill validates readiness and launches the script:
 
 1. Confirm PRD.md and pilot.yaml exist
 2. Confirm feedback loops work (dry run)
 3. Ask for iteration cap (default from config)
-4. Ask: Docker sandbox? (recommended for AFK)
-5. Launch `afk-loop.sh`
+4. Ask: Docker sandbox? (recommended for autonomous)
+5. Launch `pilot-loop.sh`
 
 ### Script
 
@@ -245,8 +245,8 @@ gaps:
 loop:
   type: feature                  # feature | test-coverage | lint-fix | refactor | issues
   output: commit                 # commit (default) | pr (branch + PR per task)
-  iterations: 20                 # max iterations for AFK
-  sandbox: true                  # use Docker sandbox for AFK
+  iterations: 20                 # max iterations for loop mode
+  sandbox: true                  # use Docker sandbox for loop mode
   retries: 3                     # max fix attempts per feedback loop
 
 quality:
@@ -305,7 +305,7 @@ When `output: pr`, the commit step becomes:
 
 ## Recipe Skills
 
-Beyond the core `plan`/`once`/`afk` workflow, PILOT ships 11 recipe skills — each a specialized loop that uses the same mechanics with a different prompt:
+Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — each a specialized loop that uses the same mechanics with a different prompt:
 
 | Skill | Command | What It Does |
 |-------|---------|-------------|
@@ -323,12 +323,12 @@ Beyond the core `plan`/`once`/`afk` workflow, PILOT ships 11 recipe skills — e
 
 Each recipe is a full SKILL.md with arguments, prerequisites, prompt, and launch instructions. See `docs/recipes.md` for details and a guide to writing custom recipes.
 
-## HITL vs AFK Guidance
+## Manual vs Autonomous Guidance
 
-- **Start with HITL** — run `/pilot:once` 5-10 times to refine the PRD and verify feedback loops catch issues
-- **Graduate to AFK** — once confident the loops work, use `/pilot:afk` for bulk execution
-- **Risky tasks stay HITL** — architecture, design, integration points
-- **Routine tasks go AFK** — bug fixes, refactors, test coverage, lint fixes
+- **Start manual** — run `/pilot:run` 5-10 times to refine the PRD and verify feedback loops catch issues
+- **Graduate to autonomous** — once confident the loops work, use `/pilot:loop` for bulk execution
+- **Risky tasks stay manual** — architecture, design, integration points
+- **Routine tasks go autonomous** — bug fixes, refactors, test coverage, lint fixes
 
 ## v0.2 Roadmap
 
