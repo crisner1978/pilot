@@ -9,6 +9,18 @@ description: Use when starting a new development workflow, setting up autonomous
 
 Generate a PRD, detect your toolchain, identify feedback loop gaps, and configure PILOT — all through guided questions.
 
+## Asking Questions
+
+Always present choices as numbered options. One question at a time. The user can select a number or type a freeform answer to add context. Example format:
+
+```
+[Brief context about what's being decided]
+
+1. Option A (short rationale)
+2. Option B (short rationale)
+3. Option C (short rationale)
+```
+
 ## Checklist
 
 You MUST complete these phases in order:
@@ -42,12 +54,25 @@ Map the detected toolchain against the four core feedback loops (see `references
 
 For each **missing** feedback loop:
 1. Use WebSearch to find the best current tool for the detected stack
-2. Present the gap with a recommendation as a question (one at a time):
+2. Present the gap with a recommendation, one at a time. Use numbered options the user can select:
 
-Example questions:
-- "No test runner detected. For this Next.js 15 + TypeScript project, **Vitest with jsdom** is the standard choice. Add test setup as the first PRD task?"
-- "No linter found. For ESM TypeScript, **Biome** is fastest (lint + format in one tool), or **ESLint** if you need the plugin ecosystem. Which do you prefer?"
-- "No type checking configured. You have `.js` files — want to add `tsconfig.json` with `checkJs: true`, or convert to TypeScript?"
+Example:
+```
+No test runner detected. For this Next.js 15 + TypeScript project:
+
+1. Vitest with jsdom (recommended — fast, ESM-native)
+2. Jest with ts-jest (mature, large ecosystem)
+3. Skip — not needed for this work
+```
+
+Example:
+```
+No linter found. For ESM TypeScript:
+
+1. Biome (fastest — lint + format in one tool)
+2. ESLint (plugin ecosystem, more configurable)
+3. Skip — not needed for this work
+```
 
 If a gap exists but isn't relevant to the planned work (e.g., no browser tests but the work is purely backend), note it in the config but don't push setup:
 ```yaml
@@ -57,26 +82,28 @@ gaps:
 
 ## Phase 3 — Task Source
 
-Ask the user one question at a time:
+Ask the user one question at a time. Present options as numbered choices:
 
-**Question 1:** "Where should tasks come from?"
-- Options: Local (describe what to build), GitHub Issues, Both
+```
+Where should tasks come from?
 
-**Question 2:** "How should completed tasks be delivered?"
-- Options: Commit directly to current branch (default, good for solo work), Create a branch + PR per task (good for teams with review processes)
+1. Local — describe what to build
+2. GitHub Issues — pull from open issues
+3. Both — issues as backlog + local description for immediate focus
+```
 
-**If Local:**
-- Ask: "What are we building? Describe the feature, fix, or goal."
-- Break the response into atomic tasks (one logical change each)
-- Prioritize: gap-filling setup tasks first, then architectural/risky tasks, then standard features, then polish
+```
+How should completed tasks be delivered?
 
-**If GitHub Issues:**
-- Run: `gh issue list --limit 30 --state open`
-- Present the issues and let user select which to include
-- Ask about priority ordering
+1. Commit to current branch (default — good for solo work)
+2. Branch + PR per task (good for teams with review processes)
+```
 
-**If Both:**
-- Combine: GitHub Issues as backlog + user description for immediate focus
+**If Local:** Ask "What are we building? Describe the feature, fix, or goal." Break the response into atomic tasks. Prioritize: gap-filling setup first, then architectural/risky tasks, then features, then polish.
+
+**If GitHub Issues:** Run `gh issue list --limit 30 --state open`, present the issues, let user select which to include, ask about priority ordering.
+
+**If Both:** Combine GitHub Issues as backlog + user description for immediate focus.
 
 **For each task, generate:**
 ```markdown
