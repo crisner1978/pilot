@@ -11,15 +11,7 @@ Generate a PRD, detect your toolchain, identify feedback loop gaps, and configur
 
 ## Asking Questions
 
-Always present choices as numbered options. One question at a time. The user can select a number or type a freeform answer to add context. Example format:
-
-```
-[Brief context about what's being decided]
-
-1. Option A (short rationale)
-2. Option B (short rationale)
-3. Option C (short rationale)
-```
+**ALWAYS use the `AskUserQuestion` tool** to present choices. This gives the native Claude Code selection UI where users can arrow-key through options, select one, or choose "Other" to type freeform context. One question at a time. Keep labels short (1-5 words), put rationale in the description. Mark recommended options with "(Recommended)" in the label.
 
 ## Checklist
 
@@ -54,24 +46,38 @@ Map the detected toolchain against the four core feedback loops (see `references
 
 For each **missing** feedback loop:
 1. Use WebSearch to find the best current tool for the detected stack
-2. Present the gap with a recommendation, one at a time. Use numbered options the user can select:
+2. Use AskUserQuestion to present the gap with tool options. One gap per question.
 
-Example:
+Example — no test runner:
+```json
+{
+  "questions": [{
+    "question": "No test runner detected. Which test runner for this Next.js 15 + TypeScript project?",
+    "header": "Test runner",
+    "options": [
+      {"label": "Vitest (Recommended)", "description": "Fast, ESM-native, jsdom for component testing"},
+      {"label": "Jest", "description": "Mature ecosystem, ts-jest transform, widely documented"},
+      {"label": "Skip", "description": "Not needed for this work — note as gap in config"}
+    ],
+    "multiSelect": false
+  }]
+}
 ```
-No test runner detected. For this Next.js 15 + TypeScript project:
 
-1. Vitest with jsdom (recommended — fast, ESM-native)
-2. Jest with ts-jest (mature, large ecosystem)
-3. Skip — not needed for this work
-```
-
-Example:
-```
-No linter found. For ESM TypeScript:
-
-1. Biome (fastest — lint + format in one tool)
-2. ESLint (plugin ecosystem, more configurable)
-3. Skip — not needed for this work
+Example — no linter:
+```json
+{
+  "questions": [{
+    "question": "No linter found. Which linter for ESM TypeScript?",
+    "header": "Linter",
+    "options": [
+      {"label": "Biome (Recommended)", "description": "Fastest — lint + format in one tool"},
+      {"label": "ESLint", "description": "Plugin ecosystem, more configurable"},
+      {"label": "Skip", "description": "Not needed for this work — note as gap in config"}
+    ],
+    "multiSelect": false
+  }]
+}
 ```
 
 If a gap exists but isn't relevant to the planned work (e.g., no browser tests but the work is purely backend), note it in the config but don't push setup:
@@ -82,21 +88,35 @@ gaps:
 
 ## Phase 3 — Task Source
 
-Ask the user one question at a time. Present options as numbered choices:
+Use AskUserQuestion for each decision:
 
+```json
+{
+  "questions": [{
+    "question": "Where should tasks come from?",
+    "header": "Task source",
+    "options": [
+      {"label": "Local", "description": "Describe what to build — I'll break it into atomic tasks"},
+      {"label": "GitHub Issues", "description": "Pull from open issues in this repo"},
+      {"label": "Both", "description": "Issues as backlog + local description for immediate focus"}
+    ],
+    "multiSelect": false
+  }]
+}
 ```
-Where should tasks come from?
 
-1. Local — describe what to build
-2. GitHub Issues — pull from open issues
-3. Both — issues as backlog + local description for immediate focus
-```
-
-```
-How should completed tasks be delivered?
-
-1. Commit to current branch (default — good for solo work)
-2. Branch + PR per task (good for teams with review processes)
+```json
+{
+  "questions": [{
+    "question": "How should completed tasks be delivered?",
+    "header": "Delivery",
+    "options": [
+      {"label": "Commit (Recommended)", "description": "Commit directly to current branch — good for solo work"},
+      {"label": "Branch + PR", "description": "Create a branch and PR per task — good for teams with review"}
+    ],
+    "multiSelect": false
+  }]
+}
 ```
 
 **If Local:** Ask "What are we building? Describe the feature, fix, or goal." Break the response into atomic tasks. Prioritize: gap-filling setup first, then architectural/risky tasks, then features, then polish.
