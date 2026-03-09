@@ -39,21 +39,41 @@ If `${CLAUDE_SKILL_DIR}` is not available, perform the checks manually:
 
 If any check fails, warn the user. Pre-existing failures will burn iterations — fix them before launching.
 
-### 4. Confirm Settings
+## Confirm Settings
 
-Ask the user to confirm before launching:
+After validation passes, present a summary and use AskUserQuestion to confirm:
 
 "Ready to launch PILOT AFK mode:
 - **Tasks remaining:** [N]
 - **Iteration cap:** [from pilot.yaml, default 20]
 - **Docker sandbox:** [from pilot.yaml, default recommended]
-- **Feedback loops:** [list of configured loops]
+- **Feedback loops:** [list of configured loops]"
 
-Launch with these settings?"
-
-Also ask:
-- "Override iteration cap? (default: [N])"
-- "Use Docker sandbox? (recommended for AFK, default: [yes/no from config])"
+```json
+{
+  "questions": [
+    {
+      "question": "Launch AFK mode with these settings?",
+      "header": "Launch",
+      "options": [
+        {"label": "Launch (Recommended)", "description": "Start autonomous loop with settings shown above"},
+        {"label": "Change iterations", "description": "Override the iteration cap before launching"},
+        {"label": "Cancel", "description": "Don't launch — return to manual mode"}
+      ],
+      "multiSelect": false
+    },
+    {
+      "question": "Use Docker sandbox?",
+      "header": "Sandbox",
+      "options": [
+        {"label": "Yes (Recommended)", "description": "Run in Docker sandbox — safer for unattended execution"},
+        {"label": "No", "description": "Run directly on host — faster but less isolated"}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
 
 ## Launch
 

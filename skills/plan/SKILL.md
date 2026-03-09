@@ -125,6 +125,23 @@ Use AskUserQuestion for each decision:
 
 **If Both:** Combine GitHub Issues as backlog + user description for immediate focus.
 
+After gathering tasks, ask about quality expectations:
+
+```json
+{
+  "questions": [{
+    "question": "What quality bar should PILOT target?",
+    "header": "Quality",
+    "options": [
+      {"label": "Prototype", "description": "Fast iteration, minimal tests, skip edge cases — ship something quickly"},
+      {"label": "Production (Recommended)", "description": "Tests for new code, error handling, follow existing patterns"},
+      {"label": "Library", "description": "Strict types, full test coverage, thorough docs, defensive coding"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
 **For each task, generate:**
 ```markdown
 - [ ] **Task N:** [Clear description]

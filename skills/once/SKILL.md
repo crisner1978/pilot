@@ -157,23 +157,14 @@ attempted: [what you tried]
 needs: [what the human should look at]
 ```
 
-### 8. Commit Progress
-
-Include `progress.txt` in the commit — it belongs in git history:
-
-```bash
-git add [changed files] progress.txt PRD.md
-git commit -m "[type]: [description]"
-```
-
-### 10. Update PRD
+### 8. Update PRD
 
 Check off the completed task in PRD.md:
 ```markdown
 - [x] **Task N:** [description]
 ```
 
-### 11. Check Completion
+### 9. Check Completion
 
 If ALL tasks in the PRD are checked off, output exactly:
 ```
