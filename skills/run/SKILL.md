@@ -64,9 +64,41 @@ Read these three files:
 
 Select the **first unchecked task** in the PRD. Do not skip ahead. Do not batch multiple tasks.
 
-If the task has dependencies on incomplete tasks above it, note this and attempt it anyway — the feedback loops will catch real blockers.
+If the task has a `Depends:` field referencing incomplete tasks, note this and attempt it anyway — the feedback loops will catch real blockers.
 
-### 3. Implement
+### 3. Preview Task
+
+Present the picked task and use AskUserQuestion to confirm before implementing:
+
+```json
+{
+  "questions": [{
+    "question": "Next task: #[N] — [task description]\n  Acceptance: [criteria]\n  Validation: [feedback loops]\n  Files: [expected files]",
+    "header": "Task",
+    "options": [
+      {"label": "Run this task", "description": "Proceed with implementation"},
+      {"label": "Skip to next", "description": "Skip this task and pick the next unchecked one"},
+      {"label": "Give guidance", "description": "I want to provide direction before you start"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If the user selects "Skip to next", move to the next unchecked task and preview again. If they select "Give guidance", read their input and incorporate it into your approach.
+
+### 4. State Approach
+
+Before writing code, briefly describe your plan in 2-3 sentences:
+- What files you'll create or modify
+- What approach or pattern you'll use
+- Any key decisions
+
+Example: "I'll create `src/middleware/rate-limit.ts` using a sliding window approach. Tests in `src/middleware/rate-limit.test.ts` with mocked timers. Will use the existing middleware pattern from `src/middleware/auth.ts`."
+
+Then proceed to implement.
+
+### 5. Implement
 
 Write the code to complete the task. Follow these rules:
 - **Read before writing** — understand existing patterns before adding code
@@ -74,7 +106,7 @@ Write the code to complete the task. Follow these rules:
 - **Respect the quality bar** from `pilot.yaml` (prototype vs production vs library)
 - **One logical change** — don't scope-creep into adjacent improvements
 
-### 4. Run Feedback Loops
+### 6. Run Feedback Loops
 
 Run each configured feedback loop from `pilot.yaml` **in order**:
 
@@ -93,7 +125,7 @@ npx playwright test    # browser (if configured)
 - A loop "passes" if the command exits with code 0
 - Pre-existing failures that existed before your changes do NOT count as your failure — but note them
 
-### 5. Handle Failures
+### 7. Handle Failures
 
 If a feedback loop fails:
 1. Read the error output carefully
@@ -108,7 +140,7 @@ When stopping on failure:
 - Suggest what the human should look at
 - Append a failure entry to progress.txt
 
-### 6. Commit
+### 8. Commit
 
 Only after ALL feedback loops pass. Check `pilot.yaml` for `loop.output` mode:
 
@@ -134,7 +166,7 @@ Use conventional commit types: `feat`, `fix`, `refactor`, `test`, `chore`, `docs
 
 **Never use `git add .` or `git add -A`** — only add files you intentionally changed (plus progress.txt and PRD.md).
 
-### 7. Update Progress
+### 9. Update Progress
 
 Keep entries concise. Sacrifice grammar for the sake of concision. This file helps future iterations skip exploration.
 
@@ -142,6 +174,7 @@ Append to `progress.txt`:
 
 ```markdown
 ## [N] — PRD #[N]: [Task description]
+time: YYYY-MM-DD HH:MM
 files: [list of files created/modified]
 decisions: [key decisions, terse]
 feedback: typecheck ✓ test ✓ lint ✓
@@ -151,20 +184,21 @@ commit: [short hash]
 For failures:
 ```markdown
 ## [N] — PRD #[N]: [Task description]
+time: YYYY-MM-DD HH:MM
 status: FAILED — [which loop]
 error: [concise error description]
 attempted: [what you tried]
 needs: [what the human should look at]
 ```
 
-### 8. Update PRD
+### 10. Update PRD
 
 Check off the completed task in PRD.md:
 ```markdown
 - [x] **Task N:** [description]
 ```
 
-### 9. Check Completion
+### 11. Check Completion
 
 If ALL tasks in the PRD are checked off, output exactly:
 ```

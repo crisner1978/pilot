@@ -27,6 +27,8 @@ You MUST complete these phases in order:
 
 Scan the repo to detect the development stack. Read `references/stack-detection.md` for the full detection table and feedback loop mapping.
 
+**Also check for `CLAUDE.md`** — if it exists, read it and extract project conventions (naming, patterns, style rules, architecture notes). Carry these into `pilot.yaml` under `quality.notes` so the agent respects existing project standards during implementation.
+
 **Output:** Present a summary of what was detected:
 ```
 Detected stack:
@@ -145,9 +147,13 @@ After gathering tasks, ask about quality expectations:
 **For each task, generate:**
 ```markdown
 - [ ] **Task N:** [Clear description]
-  - Validation: [What feedback loops verify this]
+  - Acceptance: [One-liner — what "done" looks like, testable]
+  - Validation: [Which feedback loops verify this]
   - Files: [Expected files to create/modify, if known]
+  - Depends: [Task #, only if genuinely blocked without it — omit otherwise]
 ```
+
+Keep acceptance criteria to one sentence. The agent uses these to know what to implement and what test to write. Don't front-load context — the agent can spawn sub-agents to research specifics during implementation.
 
 **Prioritization order (from RALPH):**
 1. Toolchain setup (gap-filling) — must be first

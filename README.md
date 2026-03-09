@@ -23,8 +23,10 @@ claude --plugin-dir /path/to/pilot
 ### Core
 ```bash
 /pilot:plan       # Interactive setup — generates PRD + config
-/pilot:run        # Execute one task
+/pilot:run        # Execute one task (with preview + skip)
 /pilot:loop       # Launch autonomous loop
+/pilot:status     # Sprint dashboard — progress, last run, blockers
+/pilot:add        # Insert a task into the PRD mid-sprint
 ```
 
 ### Recipes

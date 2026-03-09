@@ -27,6 +27,8 @@ pilot/                              # github.com/crisner1978/pilot
 │   ├── loop/                       # /pilot:loop — autonomous loop
 │   │   ├── SKILL.md
 │   │   └── scripts/                # readiness validation
+│   ├── status/SKILL.md             # /pilot:status — sprint dashboard
+│   ├── add/SKILL.md                # /pilot:add — insert task mid-sprint
 │   ├── migrate/                    # /pilot:migrate — pattern migration
 │   │   ├── SKILL.md
 │   │   └── assets/                 # MIGRATION.md template
@@ -68,6 +70,8 @@ claude plugin install pilot
 | `/pilot:plan` | Interactive setup — generates PRD + config from questions + auto-detection | HITL |
 | `/pilot:run` | Execute one task from the PRD, commit, update progress | Manual |
 | `/pilot:loop` | Validate readiness and launch the loop script | Autonomous |
+| `/pilot:status` | Sprint dashboard — progress, last run, blockers, next actions | HITL |
+| `/pilot:add` | Insert a task into an existing PRD mid-sprint | HITL |
 | `pilot-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel | Autonomous |
 
 ### File Convention
@@ -262,12 +266,14 @@ Committed to the repo after each iteration — it belongs in git history so futu
 
 ```markdown
 ## 1 — PRD #1: Set up Vitest with jsdom
+time: 2026-03-06 14:32
 files: vitest.config.ts, src/__tests__/smoke.test.ts, package.json
 decisions: jsdom over happy-dom, Next.js compat
 feedback: typecheck ✓ test ✓ lint ✓
 commit: a1b2c3d
 
 ## 2 — PRD #3: Add user authentication endpoint
+time: 2026-03-06 15:01
 files: src/api/auth.ts, src/api/auth.test.ts, src/middleware/session.ts
 decisions: JWT over sessions, stateless for edge runtime
 feedback: typecheck ✓ test ✓ lint ✓
@@ -277,6 +283,7 @@ commit: d4e5f6g
 For failures:
 ```markdown
 ## 3 — PRD #4: Add rate limiting middleware
+time: 2026-03-06 15:45
 status: FAILED — test
 error: vitest timeout on concurrent request test
 attempted: increased timeout, simplified test, mocked timer
