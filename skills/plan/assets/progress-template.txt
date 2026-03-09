@@ -1,0 +1,2 @@
+# PILOT Progress Log — generated [date]
+# Appended after each iteration. Committed to git. Delete after sprint.

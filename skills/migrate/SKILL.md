@@ -23,21 +23,7 @@ Optional scope: `/pilot:migrate [path]`
 
 ## Setup
 
-Create a `MIGRATION.md` describing the migration pattern:
-
-```markdown
-# Migration: [Old Pattern] → [New Pattern]
-
-## Before
-[code example of old pattern]
-
-## After
-[code example of new pattern]
-
-## Rules
-- [specific rules for this migration]
-- [edge cases to watch for]
-```
+Create a `MIGRATION.md` in the project root using the template at `assets/migration-template.md`. Fill in the before/after code examples and migration rules specific to your codebase.
 
 ## The Prompt
 

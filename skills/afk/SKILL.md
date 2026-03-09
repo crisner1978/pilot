@@ -25,35 +25,19 @@ If any prerequisite fails, tell the user what's missing and suggest: "Run `/pilo
 
 ## Readiness Validation
 
-### 1. Check Files Exist
+Run the validation script to check all prerequisites at once:
 
 ```bash
-test -f PRD.md && echo "PRD.md ✓" || echo "PRD.md ✗ — MISSING"
-test -f .claude/pilot.yaml && echo "pilot.yaml ✓" || echo "pilot.yaml ✗ — MISSING"
-test -f progress.txt && echo "progress.txt ✓" || echo "progress.txt ✗ — MISSING"
-test -f afk-loop.sh && echo "afk-loop.sh ✓" || echo "afk-loop.sh ✗ — MISSING"
+bash ${CLAUDE_SKILL_DIR}/scripts/validate-readiness.sh
 ```
 
-### 2. Count Remaining Tasks
+If `${CLAUDE_SKILL_DIR}` is not available, perform the checks manually:
 
-Read PRD.md and count unchecked (`- [ ]`) vs checked (`- [x]`) tasks. Report:
-```
-PRD status: 3/10 tasks complete, 7 remaining
-```
+1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt`, `afk-loop.sh` are all present
+2. **Count remaining tasks** — read PRD.md, count unchecked (`- [ ]`) vs checked (`- [x]`) tasks. If all complete, nothing to run.
+3. **Dry-run feedback loops** — run each configured command from pilot.yaml, report pass/fail for each
 
-If all tasks are complete, there's nothing to do: "All PRD tasks are complete. Nothing to run."
-
-### 3. Dry-Run Feedback Loops
-
-Run each configured command from pilot.yaml. Report results:
-```
-Feedback loop dry-run:
-  typecheck (tsc --noEmit): ✓ exit 0
-  test (vitest run): ✓ exit 0
-  lint (biome check .): ✗ exit 1 — 3 pre-existing violations
-```
-
-If any loop fails, warn: "Pre-existing failures will block every iteration. Fix these first, or AFK mode will burn iterations retrying."
+If any check fails, warn the user. Pre-existing failures will burn iterations — fix them before launching.
 
 ### 4. Confirm Settings
 
