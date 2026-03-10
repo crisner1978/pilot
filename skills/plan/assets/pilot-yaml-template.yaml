@@ -30,6 +30,9 @@ loop:
 guardrails:
   protected_paths: [auto-detected patterns, e.g. ".env*", "migrations/"]
 
+observability:
+  verbosity: light              # light | medium — controls decisions field detail
+
 quality:
   bar: [prototype | production | library]
   notes: [user's quality notes or "Follow existing patterns."]
