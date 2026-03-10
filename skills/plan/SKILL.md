@@ -197,7 +197,8 @@ Report results:
 
 ## After Setup
 
-Present the user with next steps:
+Present the summary, then use AskUserQuestion to let the user choose how to proceed:
+
 ```
 PILOT setup complete!
 
@@ -205,12 +206,22 @@ Generated:
   PRD.md              — [N] tasks, prioritized
   .claude/pilot.yaml  — toolchain config
   progress.txt        — ready for iteration logs
-  pilot-loop.sh         — autonomous loop script
-
-Next:
-  /pilot:run         — run one task (recommended to start)
-  /pilot:loop          — launch autonomous loop
-
-Tip: Start with /pilot:run for 5-10 iterations to verify
-feedback loops catch issues before going autonomous.
+  pilot-loop.sh       — autonomous loop script
 ```
+
+```json
+{
+  "questions": [{
+    "question": "How would you like to execute?",
+    "header": "Execute",
+    "options": [
+      {"label": "Run one task (Recommended)", "description": "Execute the first task manually — verify feedback loops work before going autonomous"},
+      {"label": "Launch loop", "description": "Start autonomous loop — grinds through the backlog unattended"},
+      {"label": "Done for now", "description": "I'll run it later"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If the user selects "Run one task", invoke `/pilot:run`. If "Launch loop", invoke `/pilot:loop`.
