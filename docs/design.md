@@ -191,32 +191,11 @@ The skill validates readiness and launches the script:
 
 ### Script
 
-```bash
-#!/bin/bash
-set -e
-
-ITERATIONS=${1:-20}
-
-for ((i=1; i<=$ITERATIONS; i++)); do
-  echo "=== PILOT Iteration $i/$ITERATIONS ==="
-
-  result=$(claude -p "@PRD.md @progress.txt @.claude/pilot.yaml \
-    Read the PRD, progress, and pilot config. \
-    Pick the highest-priority incomplete task. \
-    Implement it. Run all feedback loops from pilot.yaml. \
-    Only commit if all pass. Update progress.txt. \
-    If all tasks complete, output <promise>COMPLETE</promise>.")
-
-  echo "$result"
-
-  if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
-    echo "PILOT complete after $i iterations."
-    exit 0
-  fi
-done
-
-echo "Reached iteration cap ($ITERATIONS). Review progress.txt."
-```
+See [`scripts/pilot-loop.sh`](../scripts/pilot-loop.sh) for the canonical version. Key features:
+- Iteration cap with `<promise>COMPLETE</promise>` sentinel detection
+- Auto-stash of uncommitted changes (restored on exit via bash trap)
+- Guardrails instructions in the agent prompt (protected paths, rollback on failure)
+- Optional `--sandbox` flag for Docker isolation
 
 ## Config File (`.claude/pilot.yaml`)
 
