@@ -253,6 +253,13 @@ loop:
   sandbox: true                  # use Docker sandbox for loop mode
   retries: 3                     # max fix attempts per feedback loop
 
+guardrails:
+  protected_paths:
+    - ".env*"
+    - "*.pem"
+    - "*.key"
+    - "migrations/"
+
 quality:
   bar: production                # prototype | production | library
   notes: "Follow existing patterns. No any types. Tests for new functions."
@@ -309,6 +316,16 @@ When `output: pr`, the commit step becomes:
 3. `git push -u origin pilot/task-N-[short-description]`
 4. `gh pr create --title "[type]: [description]" --body "PILOT automated PR for PRD #N"`
 5. `git checkout [original branch]` — return for next task
+
+## Guardrails
+
+Safety features that make loop mode safe to run unsupervised.
+
+| Guardrail | Where | Behavior |
+|-----------|-------|----------|
+| Protected paths | `pilot.yaml` + run/loop skills | Auto-detected during `/pilot:plan`. Hard-blocked in loop mode, prompted in manual mode. |
+| Auto-stash | `pilot-loop.sh` | Stashes uncommitted work before loop starts, restores on exit via bash trap. |
+| Rollback on failure | `/pilot:run` skill | Failed attempts stashed as `pilot/failed-task-N` for human review. Working tree stays clean. |
 
 ## Recipe Skills
 
