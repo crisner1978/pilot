@@ -126,3 +126,13 @@ Cleanup (after sprint is done):
 - **Iteration cap is a safety net** — prevents runaway cost. 20 is a reasonable default for most PRDs
 - **Pre-existing failures burn iterations** — fix them before launching
 - **Review progress.txt after each loop run** — verify the agent made good decisions
+
+## Guardrails
+
+The loop enforces these safety guardrails automatically:
+
+- **Auto-stash** — `pilot-loop.sh` stashes uncommitted changes before starting and restores them on exit (success, failure, or Ctrl+C)
+- **Protected paths** — files matching `guardrails.protected_paths` in `pilot.yaml` are never modified in loop mode. Tasks requiring protected files are skipped and logged as escalations.
+- **Rollback on failure** — failed task attempts are stashed (`pilot/failed-task-N`) for human review. The working tree stays clean for the next iteration.
+
+Review guardrails config: `cat .claude/pilot.yaml | grep -A 10 guardrails`
