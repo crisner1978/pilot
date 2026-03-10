@@ -3,14 +3,16 @@ set -e
 
 # PILOT — Plan, Iterate, Loop, Observe, Test
 # Autonomous loop script
-# Usage: ./pilot-loop.sh [iterations] [--sandbox]
+# Usage: ./pilot-loop.sh [iterations] [--sandbox] [--verbose]
 
 ITERATIONS=${1:-20}
 SANDBOX=false
+VERBOSE=false
 
 for arg in "$@"; do
   case $arg in
     --sandbox) SANDBOX=true ;;
+    --verbose) VERBOSE=true ;;
   esac
 done
 
@@ -53,6 +55,11 @@ If a task fails all retries, stash the failed attempt: git stash push -m "pilot/
 10. If ALL tasks in the PRD are complete, output exactly: <promise>COMPLETE</promise>
 
 CRITICAL: Only work on ONE task per iteration. Do not batch multiple tasks.'
+
+if [ "$VERBOSE" = true ]; then
+  PROMPT="$PROMPT
+VERBOSITY: Write decisions in progress.txt at MEDIUM verbosity (2-3 sentences per task — what was considered, what was chosen, why)."
+fi
 
 for ((i=1; i<=$ITERATIONS; i++)); do
   echo ""
