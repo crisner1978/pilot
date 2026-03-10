@@ -105,6 +105,22 @@ Write the code to complete the task. Follow these rules:
 - **Follow the codebase style** — match indentation, naming, structure
 - **Respect the quality bar** from `pilot.yaml` (prototype vs production vs library)
 - **One logical change** — don't scope-creep into adjacent improvements
+- **Check protected paths** — before modifying any file, check `guardrails.protected_paths` in `pilot.yaml`. If the file matches a protected pattern:
+  - **In loop mode** (no human present): skip this task, log as escalation in progress.txt, do NOT modify the file
+  - **In manual mode** (human present): use AskUserQuestion to ask permission:
+    ```json
+    {
+      "questions": [{
+        "question": "Task requires modifying a protected path: [path]. Allow?",
+        "header": "Protected path",
+        "options": [
+          {"label": "Allow", "description": "Proceed — I understand the risk"},
+          {"label": "Skip task", "description": "Skip this task and move to the next one"}
+        ],
+        "multiSelect": false
+      }]
+    }
+    ```
 
 ### 6. Run Feedback Loops
 
@@ -136,9 +152,10 @@ If a feedback loop fails:
 
 When stopping on failure:
 - Do NOT commit broken code
+- **Stash the failed attempt** for human review: `git stash push -m "pilot/failed-task-[N]: [description]"`
 - Report exactly what failed and why
 - Suggest what the human should look at
-- Append a failure entry to progress.txt
+- Append a failure entry to progress.txt (include `stash: pilot/failed-task-[N]`)
 
 ### 8. Commit
 
@@ -189,6 +206,7 @@ status: FAILED — [which loop]
 error: [concise error description]
 attempted: [what you tried]
 needs: [what the human should look at]
+stash: pilot/failed-task-[N]: [description]
 ```
 
 ### 10. Update PRD
