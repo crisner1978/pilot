@@ -42,6 +42,33 @@ Detected stack:
   CI: GitHub Actions (.github/workflows/ci.yml)
 ```
 
+**Also detect sensitive files** — glob for patterns in `references/stack-detection.md` "Sensitive File Detection" table. If any matches exist, collect them for the guardrails config.
+
+Present detected protected paths:
+```
+Protected paths detected:
+  .env, .env.local          — secrets
+  migrations/               — database migrations
+  .github/workflows/        — CI/CD pipelines
+```
+
+Use AskUserQuestion to confirm protected paths:
+
+```json
+{
+  "questions": [{
+    "question": "These files/dirs will be protected from autonomous changes. Edit?",
+    "header": "Protected paths",
+    "options": [
+      {"label": "Looks good", "description": "Use the detected paths as-is"},
+      {"label": "Add more", "description": "I want to add additional paths to protect"},
+      {"label": "Skip", "description": "No protected paths needed"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
 ## Phase 2 — Gap Analysis + Recommendations
 
 Map the detected toolchain against the four core feedback loops (see `references/stack-detection.md` for the full mapping table).
@@ -170,6 +197,8 @@ Generate all four files using the templates in this skill's `assets/` directory.
 **File 1: `PRD.md`** — Read `assets/prd-template.md`, fill in task details from Phase 3, write to project root.
 
 **File 2: `.claude/pilot.yaml`** — Read `assets/pilot-yaml-template.yaml`, fill in detected values from Phase 1-2, write to `.claude/pilot.yaml`.
+
+Include `guardrails.protected_paths` from Phase 1 detection. If no paths were detected, omit the section.
 
 **File 3: `progress.txt`** — Read `assets/progress-template.txt`, fill in today's date, write to project root.
 
