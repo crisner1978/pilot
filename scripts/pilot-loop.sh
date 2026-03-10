@@ -30,13 +30,59 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 cleanup() {
+  generate_report "${i:-0}"
   if [ "$PILOT_STASHED" = true ]; then
     echo ""
     echo "Restoring stashed changes..."
     git stash pop
   fi
 }
+
+generate_report() {
+  local end_time=$(date +%s)
+  local elapsed=$(( (end_time - PILOT_START_TIME) / 60 ))
+  local end_hash=$(git rev-parse HEAD 2>/dev/null || echo "none")
+  local report_date=$(date +%Y-%m-%d)
+
+  local report="PILOT Report — $report_date
+═══════════════════════════════════════
+Iterations: $1 | Tasks: $PILOT_TASKS_DONE done, $PILOT_TASKS_FAILED failed, $PILOT_TASKS_SKIPPED skipped
+Time: ~${elapsed} minutes
+"
+
+  if [ "$PILOT_START_HASH" != "$end_hash" ] && [ "$PILOT_START_HASH" != "none" ]; then
+    report="$report
+Tasks:
+"
+    while IFS= read -r line; do
+      local hash=$(echo "$line" | cut -d' ' -f1)
+      local msg=$(echo "$line" | cut -d' ' -f2-)
+      local stat=$(git diff --stat "$hash~1".."$hash" 2>/dev/null | tail -1 | sed 's/^ */  /')
+      report="$report  $hash $msg
+$stat
+"
+    done < <(git log --oneline "$PILOT_START_HASH".."$end_hash" --reverse 2>/dev/null)
+
+    report="$report
+Full diff: git diff $PILOT_START_HASH..$end_hash
+Per-task:  git diff <hash>~1..<hash>"
+  fi
+
+  echo ""
+  echo "$report"
+  echo "$report" > pilot-report.md
+  echo ""
+  echo "Report saved to pilot-report.md"
+}
+
 trap cleanup EXIT
+
+# --- Observability: capture baseline ---
+PILOT_START_TIME=$(date +%s)
+PILOT_START_HASH=$(git rev-parse HEAD 2>/dev/null || echo "none")
+PILOT_TASKS_DONE=0
+PILOT_TASKS_FAILED=0
+PILOT_TASKS_SKIPPED=0
 
 PROMPT='@PRD.md @progress.txt @.claude/pilot.yaml
 You are PILOT — an autonomous coding agent running in loop mode.
@@ -72,17 +118,18 @@ for ((i=1; i<=$ITERATIONS; i++)); do
 
   echo "$result"
 
+  # Track task outcomes
+  if [[ "$result" == *"FAILED"* ]]; then
+    ((PILOT_TASKS_FAILED++)) || true
+  elif [[ "$result" == *"SKIPPED"* ]] || [[ "$result" == *"escalation"* ]]; then
+    ((PILOT_TASKS_SKIPPED++)) || true
+  else
+    ((PILOT_TASKS_DONE++)) || true
+  fi
+
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
-    echo ""
-    echo "============================================"
-    echo "  PILOT complete after $i iterations."
-    echo "============================================"
     exit 0
   fi
 done
 
-echo ""
-echo "============================================"
-echo "  Reached iteration cap ($ITERATIONS)."
-echo "  Review progress.txt for status."
-echo "============================================"
+echo "Reached iteration cap ($ITERATIONS)."
