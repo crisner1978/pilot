@@ -49,3 +49,20 @@ Files and directories the agent should never modify without explicit permission.
 | `*.lock` | Lockfiles | Package lockfiles — should only change via package manager |
 
 Detection: During `/pilot:plan` Phase 1, glob for these patterns. If any exist, add them to `guardrails.protected_paths` in `pilot.yaml`.
+
+## Scan Heuristics
+
+Maps task types to likely relevant directories. ScoutAgent uses this as a starting point, then adapts based on the actual file tree.
+
+| Task Type | Heuristic Globs |
+|-----------|----------------|
+| UI / frontend | `**/components/**`, `**/hooks/**`, `**/styles/**`, `**/app/**`, `**/pages/**` |
+| API / backend | `**/api/**`, `**/routes/**`, `**/middleware/**`, `**/controllers/**`, `**/services/**` |
+| Data / models | `**/models/**`, `**/schemas/**`, `**/db/**`, `**/prisma/**`, `**/entities/**` |
+| CLI / tooling | `**/commands/**`, `**/cli/**`, `bin/**`, `**/scripts/**` |
+| Tests | `**/__tests__/**`, `**/*.test.*`, `**/*.spec.*`, `**/fixtures/**` |
+| Config / infra | `**/config/**`, `**/infrastructure/**`, `docker*`, `**/deploy/**` |
+| Auth / security | `**/auth/**`, `**/middleware/**`, `**/guards/**`, `**/policies/**` |
+| Shared / utils | `**/utils/**`, `**/helpers/**`, `**/lib/**`, `**/shared/**`, `**/common/**` |
+
+The agent reads the full file tree first. If the repo uses non-standard directories (e.g., `app/` instead of `pages/` for Next.js), the agent adapts. The table is a starting point, not a constraint.
