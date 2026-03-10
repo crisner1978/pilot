@@ -19,6 +19,23 @@ if [ "$SANDBOX" = true ]; then
   CLAUDE_CMD="docker sandbox run claude"
 fi
 
+# --- Guardrail: Auto-stash uncommitted changes ---
+PILOT_STASHED=false
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing uncommitted changes..."
+  git stash --include-untracked -m "pilot/pre-loop-stash"
+  PILOT_STASHED=true
+fi
+
+cleanup() {
+  if [ "$PILOT_STASHED" = true ]; then
+    echo ""
+    echo "Restoring stashed changes..."
+    git stash pop
+  fi
+}
+trap cleanup EXIT
+
 PROMPT='@PRD.md @progress.txt @.claude/pilot.yaml
 You are PILOT — an autonomous coding agent running in loop mode.
 
