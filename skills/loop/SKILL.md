@@ -83,8 +83,14 @@ After confirmation, provide the launch command:
 # Standard launch
 ./pilot-loop.sh [iterations]
 
+# With verbose decisions (medium verbosity)
+./pilot-loop.sh [iterations] --verbose
+
 # With Docker sandbox
 ./pilot-loop.sh [iterations] --sandbox
+
+# Combined
+./pilot-loop.sh [iterations] --sandbox --verbose
 ```
 
 Tell the user:
@@ -105,20 +111,20 @@ The loop will stop automatically when:
 
 ## After Completion
 
-When the user returns, suggest:
+When the loop finishes, `pilot-loop.sh` automatically generates a report:
+- **Terminal** — summary printed to stdout
+- **File** — full report saved to `pilot-report.md`
+
+The report includes: task count (done/failed/skipped), per-task diff stats, decision log, and git diff commands for drill-in.
+
+Review commands:
 ```
-Welcome back! Review what PILOT did:
-
-  cat progress.txt             — full iteration log
-  git log --oneline            — commit history
-  cat PRD.md                   — task completion status
-
-If tasks remain, run /pilot:loop again or /pilot:run for manual mode.
-
-Cleanup (after sprint is done):
-  rm progress.txt PRD.md pilot-loop.sh .claude/pilot.yaml
-  These are session-specific — not permanent documentation.
+cat pilot-report.md              — loop summary + diff stats
+cat progress.txt                 — full iteration log
+git log --oneline                — commit history
 ```
+
+If tasks remain, run `/pilot:loop` again or `/pilot:run` for manual mode.
 
 ## Safety Notes
 
