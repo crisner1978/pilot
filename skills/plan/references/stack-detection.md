@@ -32,3 +32,20 @@
 | `test` | Verify behavior, catch regressions | All code changes |
 | `lint` | Enforce style, catch bugs | All code changes |
 | `browser` | Verify rendered UI | Frontend/UI tasks |
+
+## Sensitive File Detection
+
+Files and directories the agent should never modify without explicit permission.
+
+| Pattern | Category | Why |
+|---------|----------|-----|
+| `.env*` | Secrets | Environment variables, API keys |
+| `*.pem`, `*.key`, `*.cert` | Secrets | SSL/TLS certificates and keys |
+| `*.secret`, `credentials.*` | Secrets | Credential files |
+| `migrations/`, `db/migrate/` | Database | Migration files — order-sensitive, destructive |
+| `docker-compose.prod.*`, `*.production.*` | Production | Production-specific config |
+| `infrastructure/`, `terraform/`, `*.tf` | Infrastructure | Infra-as-code — affects live systems |
+| `.github/workflows/`, `.gitlab-ci.yml`, `ci/` | CI/CD | Pipeline config — affects deployment |
+| `*.lock` | Lockfiles | Package lockfiles — should only change via package manager |
+
+Detection: During `/pilot:plan` Phase 1, glob for these patterns. If any exist, add them to `guardrails.protected_paths` in `pilot.yaml`.
