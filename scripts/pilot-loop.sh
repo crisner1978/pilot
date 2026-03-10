@@ -50,19 +50,91 @@ Iterations: $1 | Tasks: $PILOT_TASKS_DONE done, $PILOT_TASKS_FAILED failed, $PIL
 Time: ~${elapsed} minutes
 "
 
-  if [ "$PILOT_START_HASH" != "$end_hash" ] && [ "$PILOT_START_HASH" != "none" ]; then
-    report="$report
-Tasks:
-"
-    while IFS= read -r line; do
-      local hash=$(echo "$line" | cut -d' ' -f1)
-      local msg=$(echo "$line" | cut -d' ' -f2-)
-      local stat=$(git diff --stat "$hash~1".."$hash" 2>/dev/null | tail -1 | sed 's/^ */  /')
-      report="$report  $hash $msg
-$stat
-"
-    done < <(git log --oneline "$PILOT_START_HASH".."$end_hash" --reverse 2>/dev/null)
+  # Parse progress.txt for per-task details and decisions
+  if [ -f progress.txt ]; then
+    local tasks_section=""
+    local decisions_section=""
+    local current_task=""
+    local current_status=""
+    local current_commit=""
+    local current_decisions=""
+    local current_stash=""
+    local current_files=""
+    local task_num=0
 
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^##\ ([0-9]+)\ —\ (.+) ]]; then
+        # Flush previous task
+        if [ -n "$current_task" ]; then
+          local icon="✓"
+          local detail=""
+          if [[ "$current_status" == *"FAILED"* ]]; then
+            icon="✗"
+            detail=" — $current_status"
+            [ -n "$current_stash" ] && detail="$detail
+     stash: $current_stash"
+          elif [[ "$current_status" == *"SKIPPED"* ]] || [[ "$current_status" == *"escalation"* ]]; then
+            icon="⊘"
+            detail=" — $current_status"
+          elif [ -n "$current_commit" ]; then
+            # Get diff stat for committed tasks
+            local stat=$(git diff --stat "$current_commit~1".."$current_commit" 2>/dev/null | tail -1 | sed 's/^ *//')
+            detail="  $stat    $current_commit"
+          fi
+          tasks_section="$tasks_section  $icon #$task_num $current_task$detail
+"
+          [ -n "$current_decisions" ] && decisions_section="$decisions_section  #$task_num: $current_decisions
+"
+        fi
+        task_num="${BASH_REMATCH[1]}"
+        current_task="${BASH_REMATCH[2]}"
+        current_status=""
+        current_commit=""
+        current_decisions=""
+        current_stash=""
+        current_files=""
+      elif [[ "$line" =~ ^status:\ (.+) ]]; then
+        current_status="${BASH_REMATCH[1]}"
+      elif [[ "$line" =~ ^commit:\ (.+) ]]; then
+        current_commit="${BASH_REMATCH[1]}"
+      elif [[ "$line" =~ ^decisions:\ (.+) ]]; then
+        current_decisions="${BASH_REMATCH[1]}"
+      elif [[ "$line" =~ ^stash:\ (.+) ]]; then
+        current_stash="${BASH_REMATCH[1]}"
+      fi
+    done < progress.txt
+
+    # Flush last task
+    if [ -n "$current_task" ]; then
+      local icon="✓"
+      local detail=""
+      if [[ "$current_status" == *"FAILED"* ]]; then
+        icon="✗"
+        detail=" — $current_status"
+        [ -n "$current_stash" ] && detail="$detail
+     stash: $current_stash"
+      elif [[ "$current_status" == *"SKIPPED"* ]] || [[ "$current_status" == *"escalation"* ]]; then
+        icon="⊘"
+        detail=" — $current_status"
+      elif [ -n "$current_commit" ]; then
+        local stat=$(git diff --stat "$current_commit~1".."$current_commit" 2>/dev/null | tail -1 | sed 's/^ *//')
+        detail="  $stat    $current_commit"
+      fi
+      tasks_section="$tasks_section  $icon #$task_num $current_task$detail
+"
+      [ -n "$current_decisions" ] && decisions_section="$decisions_section  #$task_num: $current_decisions
+"
+    fi
+
+    [ -n "$tasks_section" ] && report="$report
+$tasks_section"
+    [ -n "$decisions_section" ] && report="$report
+Decisions:
+$decisions_section"
+  fi
+
+  # Add diff commands
+  if [ "$PILOT_START_HASH" != "$end_hash" ] && [ "$PILOT_START_HASH" != "none" ]; then
     report="$report
 Full diff: git diff $PILOT_START_HASH..$end_hash
 Per-task:  git diff <hash>~1..<hash>"
