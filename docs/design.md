@@ -239,6 +239,9 @@ guardrails:
     - "*.key"
     - "migrations/"
 
+observability:
+  verbosity: light              # light | medium
+
 quality:
   bar: production                # prototype | production | library
   notes: "Follow existing patterns. No any types. Tests for new functions."
@@ -306,6 +309,18 @@ Safety features that make loop mode safe to run unsupervised.
 | Protected paths | `pilot.yaml` + run/loop skills | Auto-detected during `/pilot:plan`. Hard-blocked in loop mode, prompted in manual mode. |
 | Auto-stash | `pilot-loop.sh` | Stashes uncommitted work before loop starts, restores on exit via bash trap. |
 | Rollback on failure | `/pilot:run` skill | Failed attempts stashed as `pilot/failed-task-N` for human review. Working tree stays clean. |
+
+## Observability
+
+Transparency features so you know what happened during a loop run.
+
+| Feature | Where | Details |
+|---------|-------|---------|
+| Summary report | `pilot-loop.sh` → `pilot-report.md` + terminal | Task count, diff stats, decisions, git diff commands. Generated on loop exit. |
+| Decision verbosity | `pilot.yaml` + `--verbose` flag | `light` (default, one-liner) or `medium` (2-3 sentences). CLI overrides config. |
+| Diff visualization | `pilot-report.md` | Per-task `git diff --stat` + copy-paste commands for full diffs. |
+
+`pilot-report.md` is ephemeral — overwritten each loop run, not committed to git.
 
 ## Recipe Skills
 
