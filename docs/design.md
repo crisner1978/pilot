@@ -295,6 +295,7 @@ status: FAILED — test
 error: vitest timeout on concurrent request test
 attempted: increased timeout, simplified test, mocked timer
 needs: human to review test design for race condition
+stash: pilot/failed-task-3: Add rate limiting middleware
 ```
 
 **Cleanup:** Delete `progress.txt` after the sprint is done. It's session-specific context, not permanent documentation.
