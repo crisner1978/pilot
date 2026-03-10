@@ -187,6 +187,10 @@ Use conventional commit types: `feat`, `fix`, `refactor`, `test`, `chore`, `docs
 
 Keep entries concise. Sacrifice grammar for the sake of concision. This file helps future iterations skip exploration.
 
+Check `observability.verbosity` in `pilot.yaml` (or `--verbose` flag in loop mode):
+- **`light`** (default) — `decisions:` is a one-liner: key choice + reason
+- **`medium`** — `decisions:` is 2-3 sentences: what was considered, what was chosen, why
+
 Append to `progress.txt`:
 
 ```markdown
