@@ -24,27 +24,39 @@ If any are missing, tell the user: "Run `/pilot:plan` first to set up PILOT."
 digraph run {
     read [label="Read PRD.md + progress.txt + pilot.yaml", shape=box];
     pick [label="Pick highest-priority\nincomplete task", shape=box];
-    implement [label="Implement the task", shape=box];
-    feedback [label="Run feedback loops\n(typecheck → test → lint → browser → custom)", shape=box];
+    preview [label="Preview task\n(AskUserQuestion)", shape=box];
+    implementer [label="Dispatch ImplementerAgent", shape=box];
+    reviewer [label="Dispatch ReviewerAgent\n(spec + codebase fit)", shape=box];
+    review_pass [label="Review pass?", shape=diamond];
+    fix_review [label="ImplementerAgent\nfixes review issues", shape=box];
+    feedback [label="Run feedback loops", shape=box];
     pass [label="All pass?", shape=diamond];
-    commit [label="Commit + update progress.txt", shape=box];
-    retry [label="Fix issues\n(attempt N/3)", shape=box];
-    retries_left [label="Retries left?", shape=diamond];
-    escalate [label="Stop — report failure\nto human", shape=box];
+    commit [label="Assemble proof-of-work\ncommit message + commit", shape=box];
+    healer1 [label="HealerAgent\nattempt 1", shape=box];
+    healer2 [label="HealerAgent\nattempt 2", shape=box];
+    rethink [label="Fresh ImplementerAgent\nattempt 3 (rethink)", shape=box];
+    escalate [label="Stash + escalate\nto human", shape=box];
     done [label="Last task?", shape=diamond];
-    complete [label="Output COMPLETE sentinel", shape=doublecircle];
-    finished [label="Done — human decides\nwhether to run again", shape=doublecircle];
+    complete [label="COMPLETE", shape=doublecircle];
+    finished [label="Done", shape=doublecircle];
 
     read -> pick;
-    pick -> implement;
-    implement -> feedback;
+    pick -> preview;
+    preview -> implementer;
+    implementer -> reviewer;
+    reviewer -> review_pass;
+    review_pass -> feedback [label="yes"];
+    review_pass -> fix_review [label="no"];
+    fix_review -> reviewer;
     feedback -> pass;
     pass -> commit [label="yes"];
-    pass -> retry [label="no"];
-    retry -> feedback;
-    retries_left -> retry [label="yes"];
-    retries_left -> escalate [label="no"];
-    pass -> retries_left [label="no"];
+    pass -> healer1 [label="no"];
+    healer1 -> feedback [label="fixed"];
+    healer1 -> healer2 [label="still failing"];
+    healer2 -> feedback [label="fixed"];
+    healer2 -> rethink [label="still failing"];
+    rethink -> reviewer;
+    rethink -> escalate [label="still failing"];
     commit -> done;
     done -> complete [label="yes"];
     done -> finished [label="no"];
@@ -87,40 +99,31 @@ Present the picked task and use AskUserQuestion to confirm before implementing:
 
 If the user selects "Skip to next", move to the next unchecked task and preview again. If they select "Give guidance", read their input and incorporate it into your approach.
 
-### 4. State Approach
+### 4. Dispatch ImplementerAgent
 
-Before writing code, briefly describe your plan in 2-3 sentences:
-- What files you'll create or modify
-- What approach or pattern you'll use
-- Any key decisions
+Read `agents/implementer.md` for the full agent prompt. Dispatch it as a subagent with:
+- The task (description, acceptance criteria, context hints, expected files)
+- Codebase context from `pilot.yaml` `codebase:` section
+- Quality bar from `pilot.yaml`
 
-Example: "I'll create `src/middleware/rate-limit.ts` using a sliding window approach. Tests in `src/middleware/rate-limit.test.ts` with mocked timers. Will use the existing middleware pattern from `src/middleware/auth.ts`."
+The ImplementerAgent states its approach, implements the code, writes tests, and self-reviews. It returns:
+- **approach** — what was done, alternatives considered
+- **files_changed** — list of files
+- **self_review** — any concerns
 
-Then proceed to implement.
+### 5. Dispatch ReviewerAgent
 
-### 5. Implement
+Read `agents/reviewer.md` for the full agent prompt. Dispatch it as a subagent with:
+- The diff from ImplementerAgent
+- The task's acceptance criteria and context
+- Codebase context from `pilot.yaml`
 
-Write the code to complete the task. Follow these rules:
-- **Read before writing** — understand existing patterns before adding code
-- **Follow the codebase style** — match indentation, naming, structure
-- **Respect the quality bar** from `pilot.yaml` (prototype vs production vs library)
-- **One logical change** — don't scope-creep into adjacent improvements
-- **Check protected paths** — before modifying any file, check `guardrails.protected_paths` in `pilot.yaml`. If the file matches a protected pattern:
-  - **In loop mode** (no human present): skip this task, log as escalation in progress.txt, do NOT modify the file
-  - **In manual mode** (human present): use AskUserQuestion to ask permission:
-    ```json
-    {
-      "questions": [{
-        "question": "Task requires modifying a protected path: [path]. Allow?",
-        "header": "Protected path",
-        "options": [
-          {"label": "Allow", "description": "Proceed — I understand the risk"},
-          {"label": "Skip task", "description": "Skip this task and move to the next one"}
-        ],
-        "multiSelect": false
-      }]
-    }
-    ```
+The ReviewerAgent checks spec compliance and codebase fit. If issues are found:
+1. Send issues back to ImplementerAgent for fixes
+2. ReviewerAgent re-reviews
+3. Max 2 review rounds — then proceed to feedback loops regardless
+
+Store the ReviewerAgent's **findings_summary** for the commit message.
 
 ### 6. Run Feedback Loops
 
@@ -128,7 +131,6 @@ Run each configured feedback loop from `pilot.yaml` **in order**:
 
 ```bash
 # Read commands from pilot.yaml, skip null entries
-# Example:
 tsc --noEmit           # typecheck
 vitest run             # test
 biome check .          # lint
@@ -141,39 +143,61 @@ npx playwright test    # browser (if configured)
 - A loop "passes" if the command exits with code 0
 - Pre-existing failures that existed before your changes do NOT count as your failure — but note them
 
-### 7. Handle Failures
+### 7. Handle Failures — Heal → Rethink → Escalate
 
-If a feedback loop fails:
-1. Read the error output carefully
-2. Fix the issue in your code
-3. Re-run the failing loop
-4. Retry up to **3 times per loop**
-5. If still failing after 3 attempts: **STOP**
+If a feedback loop fails, use the smart escalation chain:
 
-When stopping on failure:
+**Attempt 1 — HealerAgent targeted fix:**
+Read `agents/healer.md`. Dispatch with the error output, diff, acceptance criteria, and codebase context. HealerAgent diagnoses the root cause and applies a minimal fix. Re-run the failing feedback loop.
+
+**Attempt 2 — HealerAgent different approach:**
+If attempt 1 didn't fix it, dispatch HealerAgent again with attempt number 2. It tries a different fix strategy. Re-run the failing feedback loop.
+
+**Attempt 3 — Fresh ImplementerAgent rethink:**
+If HealerAgent couldn't fix it, dispatch a **fresh** ImplementerAgent with failure context: "Attempts 1-2 tried X and Y. Both failed because Z. Try a different approach entirely." The fresh ImplementerAgent rethinks from scratch, then goes through ReviewerAgent and feedback loops again.
+
+**After attempt 3 — Escalate to human:**
 - Do NOT commit broken code
-- **Stash the failed attempt** for human review: `git stash push -m "pilot/failed-task-[N]: [description]"`
-- Report exactly what failed and why
-- Suggest what the human should look at
-- Append a failure entry to progress.txt (include `stash: pilot/failed-task-[N]`)
+- **Stash the failed attempt**: `git stash push -m "pilot/failed-task-[N]: [description]"`
+- Report what failed, what was tried, what the human should look at
+- Append failure entry to progress.txt
 
-### 8. Commit
+### 8. Commit with Proof of Work
 
-Only after ALL feedback loops pass. Check `pilot.yaml` for `loop.output` mode:
+Only after ALL feedback loops pass. Assemble the commit message from agent outputs:
+
+```
+[type]: [short description]
+
+PILOT Task #[N] — [task description]
+Acceptance: [criteria] ✓
+
+Approach: [from ImplementerAgent — what was done, pattern/library used]
+Considered: [from ImplementerAgent — alternatives rejected and why]
+
+Files: [N] changed, +[added]/-[removed]
+  [file1] (new|modified)
+  [file2] (new|modified)
+
+Feedback: typecheck ✓  test ✓  lint ✓
+Reviewed: [from ReviewerAgent — findings_summary]
+```
+
+With `--verbose` or `observability.verbosity: medium`, include detailed reviewer findings in the `Reviewed:` line.
+
+Check `pilot.yaml` for `loop.output` mode:
 
 **If `output: commit` (default):**
-
 ```bash
-git add [specific files you changed] progress.txt PRD.md
-git commit -m "[type]: [description of what this task accomplished]"
+git add [specific files] progress.txt PRD.md
+git commit -m "[proof of work message]"
 ```
 
 **If `output: pr`:**
-
 ```bash
 git checkout -b pilot/task-[N]-[short-description]
-git add [specific files you changed] progress.txt PRD.md
-git commit -m "[type]: [description of what this task accomplished]"
+git add [specific files] progress.txt PRD.md
+git commit -m "[proof of work message]"
 git push -u origin pilot/task-[N]-[short-description]
 gh pr create --title "[type]: [description]" --body "PILOT automated PR for PRD #[N]"
 git checkout [original branch]
@@ -207,8 +231,10 @@ For failures:
 ## [N] — PRD #[N]: [Task description]
 time: YYYY-MM-DD HH:MM
 status: FAILED — [which loop]
-error: [concise error description]
-attempted: [what you tried]
+approach: [what ImplementerAgent tried]
+healer: [attempt 1 diagnosis], [attempt 2 diagnosis]
+rethink: [attempt 3 approach, if reached]
+error: [final error]
 needs: [what the human should look at]
 stash: pilot/failed-task-[N]: [description]
 ```
