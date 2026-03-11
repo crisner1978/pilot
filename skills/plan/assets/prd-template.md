@@ -18,6 +18,7 @@
   - Context: [pattern notes, integration hints from ArchitectAgent]
   - Validation: [feedback loops]
   - Files: [expected files]
+  - Depends: none
 
 - [ ] **2.** [Task description]
   - Acceptance: [one-liner]

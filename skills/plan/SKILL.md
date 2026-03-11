@@ -73,7 +73,9 @@ Use AskUserQuestion to confirm protected paths:
 
 ## Phase 2 — Targeted Codebase Analysis
 
-After the user describes what they want to build (Phase 4), dispatch the **ScoutAgent** to analyze the relevant parts of the codebase. However, if context scan reveals enough about the project type from config files and directory structure, you may dispatch ScoutAgent early.
+This phase executes after Phase 4 (Task Source) provides the task description. However, GapAgent (Phase 3) only needs stack detection results and can run immediately after Phase 1 — **dispatch Phases 2 and 3 in parallel** when possible.
+
+Dispatch the **ScoutAgent** to analyze the relevant parts of the codebase.
 
 Read `agents/scout.md` for the full agent prompt. Dispatch it as a subagent with:
 - The full file tree (run `find . -type f -not -path './.git/*' -not -path './node_modules/*' | head -200` or equivalent)
@@ -98,11 +100,7 @@ Dispatch the **GapAgent** to analyze toolchain coverage. Read `agents/gap.md` fo
 - Current feedback loop config
 - The stack detection reference (`references/stack-detection.md`)
 
-The GapAgent returns a structured gap analysis with recommendations. For each gap with a recommended tool, use AskUserQuestion to present options to the user (one question per gap). The GapAgent may also identify setup tasks — these become the first tasks in the PRD.
-
-For each **missing** feedback loop:
-1. Use WebSearch to find the best current tool for the detected stack
-2. Use AskUserQuestion to present the gap with tool options. One gap per question.
+The GapAgent returns a structured gap analysis with recommendations (it uses WebSearch internally to research current tools). For each gap with a recommended tool, use AskUserQuestion to present options to the user (one question per gap). The GapAgent may also identify setup tasks — these become the first tasks in the PRD.
 
 Example — no test runner:
 ```json
