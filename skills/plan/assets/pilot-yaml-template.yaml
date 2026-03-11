@@ -4,6 +4,13 @@ project:
   stack: [detected languages, frameworks]
   detected: [today's date]
 
+codebase:
+  scanned: [directories ScoutAgent analyzed]
+  patterns: [key patterns discovered]
+  conventions: [naming, file organization]
+  key_files: [reference files for the agent to follow]
+  avoid: [anti-patterns, legacy code to avoid]
+
 source:
   type: [local | github | both]
   github:
