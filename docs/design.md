@@ -27,7 +27,12 @@ pilot/                              # github.com/crisner1978/pilot
 │   │   │   └── gap.md
 │   │   ├── assets/                 # PRD, yaml, progress templates
 │   │   └── references/             # stack detection table
-│   ├── run/SKILL.md                # /pilot:run — execute one task
+│   ├── run/                        # /pilot:run — execute one task
+│   │   ├── SKILL.md
+│   │   └── agents/
+│   │       ├── implementer.md
+│   │       ├── reviewer.md
+│   │       └── healer.md
 │   ├── loop/                       # /pilot:loop — autonomous loop
 │   │   ├── SKILL.md
 │   │   └── scripts/                # readiness validation
@@ -346,6 +351,44 @@ Planning flow:
 7. Readiness check
 
 Agent prompts live in `skills/plan/agents/`. They are dispatched as subagents by the plan orchestrator.
+
+## Run-Phase Agents
+
+`/pilot:run` dispatches specialized agents for implementation, review, and failure recovery.
+
+| Agent | Persona | Purpose |
+|-------|---------|---------|
+| ImplementerAgent | Senior developer | Implements the task — code + tests, states approach, self-reviews |
+| ReviewerAgent | Tech lead | Reviews spec compliance + codebase fit before feedback loops |
+| HealerAgent | Senior debugger | Diagnoses feedback loop failures, applies targeted fixes |
+
+Execution flow:
+1. ImplementerAgent codes the task
+2. ReviewerAgent verifies spec + codebase fit (max 2 rounds)
+3. Feedback loops run (typecheck, test, lint, browser)
+4. On failure: HealerAgent attempt 1 → attempt 2 → fresh ImplementerAgent rethink → escalate to human
+
+Agent prompts live in `skills/run/agents/`.
+
+## Proof of Work
+
+Every PILOT commit carries structured evidence in the commit body:
+
+```
+[type]: [short description]
+
+PILOT Task #[N] — [description]
+Acceptance: [criteria] ✓
+
+Approach: [what was done]
+Considered: [alternatives rejected]
+
+Files: [N] changed, +[added]/-[removed]
+Feedback: typecheck ✓  test ✓  lint ✓
+Reviewed: spec ✓  codebase-fit ✓
+```
+
+Assembled by the orchestrator from ImplementerAgent (approach, alternatives) + ReviewerAgent (findings) + feedback loop results. `git log` tells the full story.
 
 ## Recipe Skills
 
