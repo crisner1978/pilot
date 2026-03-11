@@ -21,6 +21,10 @@ pilot/                              # github.com/crisner1978/pilot
 ├── skills/
 │   ├── plan/                       # /pilot:plan — interactive setup
 │   │   ├── SKILL.md
+│   │   ├── agents/                 # specialized planning agents
+│   │   │   ├── scout.md
+│   │   │   ├── architect.md
+│   │   │   └── gap.md
 │   │   ├── assets/                 # PRD, yaml, progress templates
 │   │   └── references/             # stack detection table
 │   ├── run/SKILL.md                # /pilot:run — execute one task
@@ -321,6 +325,27 @@ Transparency features so you know what happened during a loop run.
 | Diff visualization | `pilot-report.md` | Per-task `git diff --stat` + copy-paste commands for full diffs. |
 
 `pilot-report.md` is ephemeral — overwritten each loop run, not committed to git.
+
+## Planning Agents
+
+`/pilot:plan` dispatches specialized agents for codebase-aware planning.
+
+| Agent | Persona | Purpose |
+|-------|---------|---------|
+| ScoutAgent | Senior engineer reviewing unfamiliar code | Targeted scan of relevant codebase areas — extracts patterns, conventions, key files |
+| GapAgent | DevOps engineer auditing CI/CD | Analyzes toolchain gaps, researches best tools, recommends setup |
+| ArchitectAgent | Staff engineer planning a sprint | Orders tasks, adds dependencies + context hints, identifies parallel groups |
+
+Planning flow:
+1. Context scan (detect stack, toolchain)
+2. ScoutAgent (targeted codebase analysis)
+3. GapAgent (toolchain gap analysis) — can run parallel with Scout
+4. Task source (gather from user / GitHub)
+5. ArchitectAgent (order, enrich, parallelize tasks)
+6. Generate artifacts
+7. Readiness check
+
+Agent prompts live in `skills/plan/agents/`. They are dispatched as subagents by the plan orchestrator.
 
 ## Recipe Skills
 
