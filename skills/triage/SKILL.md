@@ -27,24 +27,20 @@ Check that these exist:
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 2. Write Ephemeral Prompt
+### 2. Create Owned Prompt Override
 
-Parse arguments to determine the issue filter (label, milestone, or default "ready"), then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing FILTER with actual value):
+Parse arguments to determine the issue filter (label, milestone, or default "ready"), then create an ephemeral prompt override. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing FILTER with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running an issue triage loop.
 
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, progress logging, and top-level `PILOT_RESULT=...` output. Respect `loop.output` from `pilot.yaml` for commit vs PR behavior.
+
 1. Run: gh issue list --limit 10 --state open --label "FILTER"
 2. Pick the highest-priority issue. Read it fully with: gh issue view [number]
-3. Create branch: git checkout -b pilot/issue-[number]-[short-description]
-4. Implement the fix or feature described in the issue.
-5. Run all feedback loops from pilot.yaml.
-6. Commit if all pass. Include progress.txt.
-7. Push and open PR: gh pr create --title "[type]: [description]" --body "Closes #[number]"
-8. Return to main branch: git checkout main
-9. Append to progress.txt: issue number, title, PR URL.
-10. If no matching issues remain, output <promise>COMPLETE</promise>.
+3. Implement the fix or feature described in the issue.
+4. If no matching issues remain, emit PILOT_RESULT=done and <promise>COMPLETE</promise>.
 
 ONE issue per iteration. Create clean, reviewable PRs.
 ```
@@ -72,9 +68,9 @@ After confirmation, launch the loop:
 
 ```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 10
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 10
 ```
 
 ### 4. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report issues processed and PRs created.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop deletes only the override created for this run. Report issues processed and PRs created.

@@ -44,7 +44,7 @@ pilot/                              # github.com/crisner1978/pilot
 │   └── [9 more recipe skills]/    # coverage, lint-fix, duplication, entropy,
 │       └── SKILL.md                # deps, types, docs, a11y, security, triage
 ├── scripts/
-│   └── pilot-loop.sh                 # bash loop script (runs from plugin dir, never copied)
+│   └── pilot-loop.sh                 # shared plugin-owned loop script (never copied into user repos)
 ├── docs/
 │   ├── design.md
 │   └── recipes.md                  # recipe reference + custom recipe guide
@@ -81,7 +81,7 @@ claude plugin install pilot
 | `/pilot:loop` | Validate readiness and launch the loop script | Autonomous |
 | `/pilot:status` | Sprint dashboard — progress, last run, blockers, next actions | HITL |
 | `/pilot:add` | Insert a task into an existing PRD mid-sprint | HITL |
-| `pilot-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel (lives in plugin `scripts/`) | Autonomous |
+| `pilot-loop.sh` | Shared plugin-owned bash loop calling `claude -p` with iteration cap + result markers | Autonomous |
 
 ### File Convention
 
@@ -94,7 +94,9 @@ PRD.md                     # Generated task backlog (checklist format)
 progress.txt               # Append-only structured log of completed work
 ```
 
-**Ephemeral file:** Recipe skills write `.claude/pilot-prompt.md` before launching the loop. This file is auto-deleted on loop exit — it is not a permanent project artifact.
+Durable project artifacts stop there.
+
+**Ephemeral runtime state:** Recipe skills may write `.claude/pilot-prompt.md` before launching the shared loop. When the launch sets `PILOT_PROMPT_OWNED=true`, the loop treats that file as PILOT-owned scratch state and deletes it on exit. Durable customization belongs in `CLAUDE.md`, `quality.notes`, and `loop.notes` in `pilot.yaml`.
 
 ### Flow
 
@@ -110,16 +112,16 @@ progress.txt               # Append-only structured log of completed work
 /pilot:run (one task, manual)
     ├── Reads: PRD.md + progress.txt + pilot.yaml
     ├── Picks highest-priority incomplete task
-    ├── Implements it
+    ├── Dispatches ImplementerAgent / ReviewerAgent / HealerAgent via Task tool
     ├── Runs feedback loops (typecheck → test → lint → browser → custom)
     ├── Commits only if all pass (retries up to 3x, then escalates)
-    └── Appends structured entry to progress.txt
+    └── Emits one PILOT_RESULT marker + appends structured entry to progress.txt
 
 /pilot:loop (autonomous loop)
     ├── Validates PRD.md and pilot.yaml exist
     ├── Dry-runs feedback loops
     ├── Confirms iteration cap and sandbox preference
-    └── Launches pilot-loop.sh (from plugin scripts/ dir)
+    └── Launches the shared plugin-owned pilot-loop.sh
 ```
 
 ## Planning Skill (`/pilot:plan`)
@@ -153,11 +155,11 @@ The brain of the system. Interactive, one-question-at-a-time.
 - `PRD.md` — prioritized task checklist with validation criteria per task
 - `.claude/pilot.yaml` — toolchain config, feedback loops, task source, iteration limits, gaps
 - `progress.txt` — empty, ready to go
-- `pilot-loop.sh` stays in the plugin's `scripts/` directory — never copied into the user's project
+- Loop infrastructure stays in the plugin's `scripts/` directory — never copied into the user's project
 
 ### Phase 5 — Readiness Check
 
-- Verify feedback loops actually run (e.g., `vitest run` doesn't error on empty suite)
+- Verify standard feedback loops actually run (e.g., `vitest run` doesn't error on empty suite). Custom feedback commands are recorded but not executed during readiness checks because they may be non-idempotent.
 - Flag any issues before the first iteration starts
 
 ## Run Skill (`/pilot:run`)
@@ -177,8 +179,8 @@ Any fail? → Fix and retry (up to 3 attempts per loop)
 Still failing? → Stop, report what's broken, ask human
          ↓
 Check: was that the last task?
-  Yes → output <promise>COMPLETE</promise>
-  No  → done, human decides whether to run again
+  Yes → output PILOT_RESULT=done + <promise>COMPLETE</promise>
+  No  → output PILOT_RESULT=done, human decides whether to run again
 ```
 
 Key behaviors:
@@ -186,6 +188,7 @@ Key behaviors:
 - **One task per invocation** — prevents context rot
 - **Feedback loops are blocking** — no commit without green
 - **Retry is bounded** — 3 attempts to fix a failing loop, then escalate to human
+- **Agent orchestration is explicit** — ImplementerAgent, ReviewerAgent, and HealerAgent are dispatched via the Task tool with parseable JSON output blocks
 - **Progress is committed** — progress.txt and PRD.md included in every commit
 - **Progress is concise** — sacrifice grammar for concision, future iterations skip exploration
 
@@ -197,14 +200,15 @@ The skill validates readiness and launches the script:
 2. Confirm feedback loops work (dry run)
 3. Ask for iteration cap (default from config)
 4. Ask: Docker sandbox? (recommended for autonomous)
-5. Launch `pilot-loop.sh` from plugin `scripts/` directory
+5. Launch the shared `pilot-loop.sh` from plugin `scripts/` directory
 
 ### Script
 
 See [`scripts/pilot-loop.sh`](../scripts/pilot-loop.sh) for the canonical version. Key features:
-- Iteration cap with `<promise>COMPLETE</promise>` sentinel detection
-- Auto-stash of uncommitted changes (restored on exit via bash trap)
+- Iteration cap with machine-readable `PILOT_RESULT=...` markers and `<promise>COMPLETE</promise>` completion detection
+- Auto-stash of uncommitted changes with exact-stash restoration on exit
 - Guardrails instructions in the agent prompt (protected paths, rollback on failure)
+- Prompt override cleanup only when the launch owns the override file
 - Optional `--sandbox` flag for Docker isolation
 
 ## Config File (`.claude/pilot.yaml`)
@@ -241,6 +245,7 @@ loop:
   iterations: 20                 # max iterations for loop mode
   sandbox: true                  # use Docker sandbox for loop mode
   retries: 3                     # max fix attempts per feedback loop
+  notes: null                    # optional durable loop guidance
 
 guardrails:
   protected_paths:
@@ -317,7 +322,7 @@ Safety features that make loop mode safe to run unsupervised.
 | Guardrail | Where | Behavior |
 |-----------|-------|----------|
 | Protected paths | `pilot.yaml` + run/loop skills | Auto-detected during `/pilot:plan`. Hard-blocked in loop mode, prompted in manual mode. |
-| Auto-stash | `pilot-loop.sh` | Stashes uncommitted work before loop starts, restores on exit via bash trap. |
+| Auto-stash | `pilot-loop.sh` | Stashes uncommitted work before loop starts, restores that exact stash on exit via bash trap. |
 | Rollback on failure | `/pilot:run` skill | Failed attempts stashed as `pilot/failed-task-N` for human review. Working tree stays clean. |
 
 ## Observability
@@ -393,7 +398,7 @@ Assembled by the orchestrator from ImplementerAgent (approach, alternatives) + R
 
 ## Recipe Skills
 
-Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — each a self-executing specialized loop. Recipe skills write an ephemeral prompt to `.claude/pilot-prompt.md`, launch `pilot-loop.sh`, and clean up automatically:
+Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — each a self-executing specialized loop. Recipe skills write an ephemeral prompt override, launch the shared plugin loop with `PILOT_PROMPT_OWNED=true`, and rely on shared cleanup:
 
 | Skill | Command | What It Does |
 |-------|---------|-------------|
@@ -409,7 +414,7 @@ Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — e
 | Security | `/pilot:security` | Find and fix security vulnerabilities |
 | Triage | `/pilot:triage` | Process GitHub issues into branches and PRs |
 
-Each recipe is a self-executing SKILL.md: validate prerequisites → write ephemeral prompt → confirm with user → launch loop → auto-cleanup. See `docs/recipes.md` for details and a guide to writing custom recipes.
+Each recipe is a self-executing SKILL.md: validate prerequisites → optional setup → write owned prompt override → confirm with user → launch shared loop → owned cleanup. See `docs/recipes.md` for details and a guide to writing custom recipes.
 
 ## Manual vs Autonomous Guidance
 

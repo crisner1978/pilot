@@ -46,15 +46,18 @@ claude --plugin-dir /path/to/pilot
 
 ## How It Works
 
-1. **`/pilot:plan`** scans your repo, detects your toolchain, identifies gaps in your feedback loops, recommends fixes, and generates a PRD + config
+1. **`/pilot:plan`** scans your repo, detects your toolchain, identifies gaps in your feedback loops, recommends fixes, and generates the durable project artifacts: `PRD.md`, `.claude/pilot.yaml`, and `progress.txt`
 2. **`/pilot:run`** picks the next task, implements it, runs feedback loops (typecheck, test, lint, browser), commits only if all pass
-3. **`/pilot:loop`** runs the loop autonomously with an iteration cap — agent grinds through your backlog while you're away
+3. **`/pilot:loop`** launches the shared plugin-owned loop infrastructure with an iteration cap so the agent can work through your backlog autonomously
 
 ## Key Principles
 
 - **Feedback loops are non-negotiable** — no commit without green
 - **One task per iteration** — prevents context rot
 - **Progress tracking** — each iteration builds on the last without re-exploring
+- **Shared loop infrastructure** — `pilot-loop.sh` stays in the plugin, not in the user repo
+- **Self-executing recipes** — recipe skills launch their own scoped loops; no manual prompt swapping
+- **Durable guidance stays structured** — use `CLAUDE.md` and `pilot.yaml` notes, not a persistent prompt file
 - **Start manual, graduate to autonomous** — master the loop before going hands-off
 
 See [docs/design.md](docs/design.md) for the full design document and [docs/recipes.md](docs/recipes.md) for recipe details.

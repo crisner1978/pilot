@@ -26,14 +26,16 @@ Check that these exist:
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 2. Write Ephemeral Prompt
+### 2. Create Owned Prompt Override
 
-Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
+Parse arguments to determine SCOPE, then create an ephemeral prompt override. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a documentation loop.
 SCOPE: [resolved scope — path or "entire codebase"]
+
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, commit handling, progress logging, and top-level `PILOT_RESULT=...` output.
 
 1. Find ONE public function, class, method, or API endpoint missing documentation within SCOPE.
 2. Prioritize: exported functions > public methods > internal utilities.
@@ -42,10 +44,7 @@ SCOPE: [resolved scope — path or "entire codebase"]
    - @returns with type and description
    - One usage example
    - @throws if applicable
-4. Run all feedback loops from pilot.yaml.
-5. Commit if all pass. Include progress.txt.
-6. Append to progress.txt: function/class name, file.
-7. If all public APIs in SCOPE are documented, output <promise>COMPLETE</promise>.
+4. If all public APIs in SCOPE are documented, emit PILOT_RESULT=done and <promise>COMPLETE</promise>.
 
 ONE function/class per iteration. Keep docs concise — not novels.
 ```
@@ -72,9 +71,9 @@ After confirmation, launch the loop:
 
 ```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 20
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 20
 ```
 
 ### 4. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report functions/classes documented.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop deletes only the override created for this run. Report functions/classes documented.

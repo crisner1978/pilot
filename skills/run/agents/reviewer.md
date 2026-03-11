@@ -32,16 +32,24 @@ Does the code follow existing patterns and conventions?
 
 ## Output
 
-Return your results in this structured format so the orchestrator can parse them for the proof-of-work commit message:
+Return your results in this structured format so the orchestrator can parse them reliably:
 
 ```
 ===AGENT_OUTPUT===
-spec_compliance: [pass|fail]
-codebase_fit: [pass|fail]
-issues: [list with file:line refs, or "none"]
-findings_summary: [one-liner for commit message, e.g. "spec ✓ codebase-fit ✓" or "spec ✓ (fixed: X) codebase-fit ✓"]
+{
+  "spec_compliance": "pass",
+  "codebase_fit": "pass",
+  "issues": [],
+  "findings_summary": "spec pass, codebase-fit pass"
+}
 ===END_OUTPUT===
 ```
+
+For `issues`, use a JSON array. Each issue object must include:
+- `severity` — `high`, `medium`, or `low`
+- `file` — repo-relative path
+- `line` — 1-based line number, or `null` if unknown
+- `summary` — concise actionable finding
 
 ## Rules
 
@@ -50,3 +58,4 @@ findings_summary: [one-liner for commit message, e.g. "spec ✓ codebase-fit ✓
 - **Max 2 review rounds** — if issues persist after 2 rounds, proceed to feedback loops anyway
 - **Don't block on style** — the linter catches style. You catch logic and pattern mismatches.
 - **Don't add scope** — review against the acceptance criteria, not your idea of what should be built
+- **Output valid JSON only inside the block** — no prose, comments, or trailing text between the delimiters

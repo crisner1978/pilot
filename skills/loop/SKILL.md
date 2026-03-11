@@ -34,7 +34,7 @@ If `${CLAUDE_SKILL_DIR}` is not available, perform the checks manually:
 
 1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt` are all present
 2. **Count remaining tasks** — read PRD.md, count unchecked (`- [ ]`) vs checked (`- [x]`) tasks. If all complete, nothing to run.
-3. **Dry-run feedback loops** — run each configured command from pilot.yaml, report pass/fail for each
+3. **Dry-run feedback loops** — run configured standard commands from pilot.yaml and report pass/fail. List `feedback.custom` entries, but do not execute them during readiness because they may have side effects.
 
 If any check fails, warn the user. Pre-existing failures will burn iterations — fix them before launching.
 
@@ -76,11 +76,12 @@ After validation passes, present a summary and use AskUserQuestion to confirm:
 
 ## Prompt Lifecycle
 
-`pilot-loop.sh` reads its prompt from `.claude/pilot-prompt.md` if the file exists, otherwise it uses a built-in default prompt for PRD-based execution. The prompt file is **ephemeral** — it is auto-deleted when the loop exits (success, failure, or Ctrl+C).
+`pilot-loop.sh` reads its prompt from `.claude/pilot-prompt.md` if the file exists, otherwise it uses a built-in default prompt for PRD-based execution.
 
-- **Default (no prompt file):** Loop executes tasks from `PRD.md` using the built-in prompt
-- **Recipe skills** (coverage, lint-fix, etc.) write their own prompt to `.claude/pilot-prompt.md` before launching the loop
-- **After loop exit:** The prompt file is cleaned up automatically — no stale state
+- **Default (no prompt file):** The shared plugin loop executes tasks from `PRD.md` using the built-in prompt
+- **Recipe skills:** They may write an ephemeral `.claude/pilot-prompt.md` override before launching the loop
+- **Ownership:** Launches that set `PILOT_PROMPT_OWNED=true` treat `.claude/pilot-prompt.md` as PILOT-owned runtime scratch and delete it on exit
+- **Durable customization:** Put long-lived guidance in `CLAUDE.md`, `quality.notes`, or `loop.notes` inside `.claude/pilot.yaml` instead of managing `.claude/pilot-prompt.md` directly
 
 ## Launch
 
@@ -102,7 +103,7 @@ bash "$PILOT_LOOP" [iterations] --sandbox
 bash "$PILOT_LOOP" [iterations] --sandbox --verbose
 ```
 
-If `${CLAUDE_SKILL_DIR}` is not available, locate the script relative to the plugin installation (typically `~/.claude/skills/*/pilot/scripts/pilot-loop.sh`).
+If `${CLAUDE_SKILL_DIR}` is not available, locate the script relative to the plugin installation (typically `~/.claude/skills/*/pilot/scripts/pilot-loop.sh`). Do not look for a copied script in the project root.
 
 Tell the user:
 ```
@@ -143,12 +144,13 @@ If tasks remain, run `/pilot:loop` again or `/pilot:run` for manual mode.
 - **Iteration cap is a safety net** — prevents runaway cost. 20 is a reasonable default for most PRDs
 - **Pre-existing failures burn iterations** — fix them before launching
 - **Review progress.txt after each loop run** — verify the agent made good decisions
+- **Iteration outcomes are machine-readable** — each loop iteration should emit one `PILOT_RESULT=...` marker
 
 ## Guardrails
 
 The loop enforces these safety guardrails automatically:
 
-- **Auto-stash** — `pilot-loop.sh` stashes uncommitted changes before starting and restores them on exit (success, failure, or Ctrl+C)
+- **Auto-stash** — `pilot-loop.sh` stashes uncommitted changes before starting and restores that exact stash on exit (success, failure, or Ctrl+C)
 - **Protected paths** — files matching `guardrails.protected_paths` in `pilot.yaml` are never modified in loop mode. Tasks requiring protected files are skipped and logged as escalations.
 - **Rollback on failure** — failed task attempts are stashed (`pilot/failed-task-N`) for human review. The working tree stays clean for the next iteration.
 

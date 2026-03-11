@@ -18,6 +18,18 @@ Before running, these files MUST exist:
 
 If any are missing, tell the user: "Run `/pilot:plan` first to set up PILOT."
 
+## Output Contract
+
+This skill is the canonical execution contract for both manual mode and loop mode.
+
+- Emit exactly one top-level result marker on its own line before finishing:
+  - `PILOT_RESULT=done`
+  - `PILOT_RESULT=failed`
+  - `PILOT_RESULT=skipped`
+  - `PILOT_RESULT=escalated`
+- If the PRD is fully complete after this task, also emit exactly: `<promise>COMPLETE</promise>`
+- Every Task-tool subagent response must include a rigid `===AGENT_OUTPUT===` block with valid JSON and no extra text inside the delimiters
+
 ## The Loop
 
 ```dot
@@ -101,26 +113,45 @@ If the user selects "Skip to next", move to the next unchecked task and preview 
 
 ### 4. Dispatch ImplementerAgent
 
-Read `agents/implementer.md` for the full agent prompt. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch it as a subagent. Include in the prompt:
+Read `agents/implementer.md` for the full agent prompt. Dispatch it explicitly with the **Task tool** using `subagent_type: "general-purpose"`. Include in the prompt:
 - The full agent prompt from `agents/implementer.md`
 - The task (description, acceptance criteria, context hints, expected files)
 - Codebase context from `pilot.yaml` `codebase:` section
 - Quality bar from `pilot.yaml`
 
-The ImplementerAgent states its approach, implements the code, writes tests, and self-reviews. Parse the `===AGENT_OUTPUT===` block from its response to extract:
-- **approach** — what was done, alternatives considered
-- **files_changed** — list of files
-- **self_review** — any concerns
+The ImplementerAgent states its approach, implements the code, writes tests, and self-reviews. Parse the `===AGENT_OUTPUT===` JSON block from its response. Expected shape:
+
+```json
+{
+  "status": "implemented",
+  "approach_summary": "what was done and which pattern/library was used",
+  "alternatives_considered": ["alternative rejected and why"],
+  "files_changed": ["path/to/file"],
+  "tests_added_or_updated": ["path/to/test-file"],
+  "self_review": "concerns or \"none\""
+}
+```
 
 ### 5. Dispatch ReviewerAgent
 
-Read `agents/reviewer.md` for the full agent prompt. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch it as a subagent. Include in the prompt:
+Read `agents/reviewer.md` for the full agent prompt. Dispatch it explicitly with the **Task tool** using `subagent_type: "general-purpose"`. Include in the prompt:
 - The full agent prompt from `agents/reviewer.md`
 - The diff from ImplementerAgent
 - The task's acceptance criteria and context
 - Codebase context from `pilot.yaml`
 
-The ReviewerAgent checks spec compliance and codebase fit. Parse the `===AGENT_OUTPUT===` block from its response. If issues are found:
+The ReviewerAgent checks spec compliance and codebase fit. Parse the `===AGENT_OUTPUT===` JSON block from its response. Expected shape:
+
+```json
+{
+  "spec_compliance": "pass",
+  "codebase_fit": "pass",
+  "issues": [],
+  "findings_summary": "spec pass, codebase-fit pass"
+}
+```
+
+Each `issues` entry must be an object with `severity`, `file`, `line`, and `summary`. If issues are found:
 1. Send issues back to ImplementerAgent for fixes (dispatch via Task tool again)
 2. ReviewerAgent re-reviews
 3. Max 2 review rounds — then proceed to feedback loops regardless
@@ -150,7 +181,19 @@ npx playwright test    # browser (if configured)
 If a feedback loop fails, use the smart escalation chain:
 
 **Attempt 1 — HealerAgent targeted fix:**
-Read `agents/healer.md`. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch with the full agent prompt, error output, diff, acceptance criteria, and codebase context. Parse the `===AGENT_OUTPUT===` block for diagnosis and fix. Re-run the failing feedback loop.
+Read `agents/healer.md`. Dispatch it explicitly with the **Task tool** using `subagent_type: "general-purpose"`. Include the full agent prompt, error output, diff, acceptance criteria, and codebase context. Parse the `===AGENT_OUTPUT===` JSON block. Expected shape:
+
+```json
+{
+  "status": "fixed",
+  "diagnosis": "what went wrong and why",
+  "fix_summary": "what changed to address it",
+  "files_changed": ["path/to/file"],
+  "confidence": "high"
+}
+```
+
+Re-run the failing feedback loop.
 
 **Attempt 2 — HealerAgent different approach:**
 If attempt 1 didn't fix it, dispatch HealerAgent again via **Task tool** with attempt number 2. It tries a different fix strategy. Re-run the failing feedback loop.
@@ -166,7 +209,7 @@ If HealerAgent couldn't fix it, dispatch a **fresh** ImplementerAgent via **Task
 
 ### 8. Commit with Proof of Work
 
-Only after ALL feedback loops pass. Assemble the commit message from the `===AGENT_OUTPUT===` blocks returned by each agent:
+Only after ALL feedback loops pass. Assemble the commit message from the parsed `===AGENT_OUTPUT===` JSON returned by each agent:
 
 ```
 [type]: [short description]
@@ -174,15 +217,15 @@ Only after ALL feedback loops pass. Assemble the commit message from the `===AGE
 PILOT Task #[N] — [task description]
 Acceptance: [criteria] ✓
 
-Approach: [from ImplementerAgent — what was done, pattern/library used]
-Considered: [from ImplementerAgent — alternatives rejected and why]
+Approach: [from ImplementerAgent.approach_summary]
+Considered: [from ImplementerAgent.alternatives_considered]
 
 Files: [N] changed, +[added]/-[removed]
   [file1] (new|modified)
   [file2] (new|modified)
 
 Feedback: typecheck ✓  test ✓  lint ✓
-Reviewed: [from ReviewerAgent — findings_summary]
+Reviewed: [from ReviewerAgent.findings_summary]
 ```
 
 With `--verbose` or `observability.verbosity: medium`, include detailed reviewer findings in the `Reviewed:` line.
@@ -250,12 +293,19 @@ Check off the completed task in PRD.md:
 
 ### 11. Check Completion
 
-If ALL tasks in the PRD are checked off, output exactly:
+Before finishing, emit exactly one top-level result marker:
+
+- `PILOT_RESULT=done` when one task completed successfully
+- `PILOT_RESULT=skipped` when nothing was changed intentionally for this iteration
+- `PILOT_RESULT=escalated` when the task had to be handed to a human after bounded retries or guardrail blocking
+- `PILOT_RESULT=failed` when the run itself failed before reaching a stable task outcome
+
+If ALL tasks in the PRD are checked off after a successful task, also output exactly:
 ```
 <promise>COMPLETE</promise>
 ```
 
-Otherwise, report what was done and stop. The human (or pilot-loop.sh) decides whether to continue.
+Otherwise, report what was done and stop. The human or `pilot-loop.sh` decides whether to continue.
 
 ## Red Flags — STOP and Reconsider
 

@@ -243,7 +243,7 @@ Include the `codebase:` section from ScoutAgent (Phase 2) in `pilot.yaml`. Inclu
 
 **File 3: `progress.txt`** — Read `assets/progress-template.txt`, fill in today's date, write to project root.
 
-**Note:** `pilot-loop.sh` lives in the PILOT plugin at `scripts/pilot-loop.sh` and is invoked from there by `/pilot:loop`. Do **not** copy it into the user's project — this avoids version drift and repo pollution. The loop script contains a default prompt for PRD-based execution. Recipe skills (coverage, lint-fix, etc.) write an ephemeral `.claude/pilot-prompt.md` before launching the loop — the script reads it if present and auto-deletes it on exit.
+**Note:** `pilot-loop.sh` lives in the PILOT plugin at `scripts/pilot-loop.sh` and is invoked from there by `/pilot:loop` and the recipe skills. Do **not** copy it into the user's project — this avoids version drift and repo pollution. The shared loop uses a built-in default prompt for PRD execution. Recipe skills may create an ephemeral `.claude/pilot-prompt.md` override for a single launch, mark it as loop-owned, and rely on shared cleanup. Durable guidance belongs in `CLAUDE.md`, `quality.notes`, and `loop.notes` in `.claude/pilot.yaml`, not in a persistent prompt file.
 
 ## Phase 7 — Readiness Check
 
@@ -268,10 +268,12 @@ Present the summary, then use AskUserQuestion to let the user choose how to proc
 ```
 PILOT setup complete!
 
-Generated:
+Durable project artifacts:
   PRD.md                  — [N] tasks, prioritized
   .claude/pilot.yaml      — toolchain config
   progress.txt            — ready for iteration logs
+
+Shared loop infrastructure stays in the PILOT plugin.
 ```
 
 ```json

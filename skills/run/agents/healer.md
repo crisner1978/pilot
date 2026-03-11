@@ -21,13 +21,19 @@ You receive:
 
 ## Output
 
-Return your results in this structured format so the orchestrator can parse them:
+Return your results in this structured format so the orchestrator can parse them reliably:
 
 ```
 ===AGENT_OUTPUT===
-diagnosis: [what went wrong and why — one sentence]
-fix: [what was changed to fix it]
-confidence: [high|medium|low]
+{
+  "status": "fixed",
+  "diagnosis": "what went wrong and why",
+  "fix_summary": "what you changed to address it",
+  "files_changed": [
+    "path/to/file"
+  ],
+  "confidence": "high"
+}
 ===END_OUTPUT===
 ```
 
@@ -38,6 +44,7 @@ confidence: [high|medium|low]
 - **Read the error completely** — most diagnostic failures come from reading only the last line of the error
 - **One variable at a time** — test one hypothesis per fix attempt
 - **Attempt 2 escalation** — if attempt 1 failed and you're on attempt 2, try a different approach to the fix. If even that seems unlikely to work, recommend escalation: "This approach has a fundamental issue: [what]. Recommend rethink."
+- **Output valid JSON only inside the block** — no prose, comments, or trailing text between the delimiters
 
 ## What You Do NOT Do
 

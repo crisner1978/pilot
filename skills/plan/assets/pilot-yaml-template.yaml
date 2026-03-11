@@ -33,6 +33,7 @@ loop:
   iterations: 20
   sandbox: true
   retries: 3
+  notes: null                    # optional durable user guidance for loop execution
 
 guardrails:
   protected_paths: [auto-detected patterns, e.g. ".env*", "migrations/"]

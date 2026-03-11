@@ -1,6 +1,6 @@
 # PILOT Recipes
 
-PILOT ships with 11 recipe skills beyond the core `plan`/`run`/`loop` workflow. Each recipe is a self-executing specialized loop — validate prerequisites, write an ephemeral prompt, confirm with the user, launch the loop, and clean up automatically.
+PILOT ships with 11 recipe skills beyond the core `plan`/`run`/`loop` workflow. Each recipe is a self-executing specialized loop — validate prerequisites, optionally generate setup artifacts, write an owned prompt override, confirm with the user, launch the shared plugin loop, and clean up automatically.
 
 ## Available Recipes
 
@@ -24,18 +24,19 @@ Every recipe follows the same execution pattern:
 
 1. **Validate** — check `.claude/pilot.yaml` exists, check skill-specific tools
 2. **Setup** (if needed) — generate initial report (e.g., coverage baseline)
-3. **Write prompt** — create `.claude/pilot-prompt.md` with the skill's iteration prompt
+3. **Write owned override** — create `.claude/pilot-prompt.md` with the recipe-specific selection logic
 4. **Confirm** — ask the user to confirm settings via `AskUserQuestion`
-5. **Launch** — run `pilot-loop.sh` which iterates the prompt
-6. **Cleanup** — `pilot-loop.sh` auto-deletes the prompt file on exit
+5. **Launch** — run the shared plugin `pilot-loop.sh` with `PILOT_PROMPT_OWNED=true`
+6. **Cleanup** — the loop deletes only the override created for that launch
+
+`.claude/pilot-prompt.md` is runtime scratch space for PILOT, not a durable user-facing configuration surface. Put long-lived project guidance in `CLAUDE.md`, `quality.notes`, or `loop.notes` in `.claude/pilot.yaml`.
 
 Each iteration of the loop:
 1. **Look** at something (code, metrics, reports, issues)
 2. **Pick ONE** thing to improve
-3. **Fix** it
-4. **Verify** the fix (feedback loops from `pilot.yaml`)
-5. **Commit** + log progress
-6. **Check** if done — output `<promise>COMPLETE</promise>` if so
+3. **Run the shared `/pilot:run` contract** — implement, review, verify, heal/retry, commit/log progress
+4. **Emit one machine-readable result marker** — `PILOT_RESULT=done|failed|skipped|escalated`
+5. **Check** if done — also output `<promise>COMPLETE</promise>` if so
 
 ## Running Recipes
 
@@ -48,7 +49,7 @@ Just run the skill command. Each recipe is self-executing:
 /pilot:a11y http://localhost:3000 # audit and fix accessibility
 ```
 
-The skill handles everything — prerequisite checks, prompt generation, user confirmation, loop launch, and cleanup. No manual steps needed.
+The skill handles everything — prerequisite checks, prompt generation, user confirmation, loop launch, and cleanup. No manual prompt swapping or separate `/pilot:loop` step is required.
 
 Some recipes have prerequisites (jscpd, axe-cli, gh). The skill will tell you what's needed and offer to install it.
 
@@ -85,7 +86,7 @@ Check that these exist:
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 2. Write Ephemeral Prompt
+### 2. Write Owned Prompt Override
 
 Parse arguments, then write `.claude/pilot-prompt.md`:
 
@@ -94,12 +95,11 @@ Parse arguments, then write `.claude/pilot-prompt.md`:
 You are PILOT running a [name] loop.
 SCOPE: [resolved from arguments]
 
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, commit or PR behavior, and progress logging.
+
 1. Find ONE thing to fix within SCOPE.
-2. Fix it.
-3. Run all feedback loops from pilot.yaml.
-4. Commit if all pass. Include progress.txt.
-5. Append to progress.txt: what was fixed.
-6. If nothing left in SCOPE, output <promise>COMPLETE</promise>.
+2. If nothing remains, emit `PILOT_RESULT=done` and `<promise>COMPLETE</promise>`.
+3. Otherwise execute exactly one iteration of that work and emit exactly one top-level `PILOT_RESULT=...` line.
 
 ONE fix per iteration.
 \```
@@ -110,16 +110,17 @@ Use AskUserQuestion to confirm, then launch:
 
 \```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 20
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 20
 \```
 
 ### 4. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report results.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop cleans up only the override created for that run. Report results.
 ```
 
 Key constraints:
 - **ONE action per iteration** — prevents context rot, ensures clean commits
 - **Always validate `pilot.yaml`** — recipes depend on feedback loops
 - **Use `AskUserQuestion`** — let the user confirm before launching
-- **Prompt file is ephemeral** — written before launch, auto-deleted on exit
+- **Prompt override is ephemeral runtime state** — recipes own it for one launch; durable project artifacts remain `PRD.md`, `.claude/pilot.yaml`, and `progress.txt`
+- **Durable customization stays structured** — use `CLAUDE.md`, `quality.notes`, and `loop.notes` instead of maintaining a persistent prompt file

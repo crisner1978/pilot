@@ -26,24 +26,22 @@ Check that these exist:
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 2. Write Ephemeral Prompt
+### 2. Create Owned Prompt Override
 
-Parse arguments to determine FILTER, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing FILTER with actual value):
+Parse arguments to determine FILTER, then create an ephemeral prompt override. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing FILTER with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a dependency update loop.
 FILTER: [resolved filter — package name, scope, or "all"]
 
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, commit handling, progress logging, and top-level `PILOT_RESULT=...` output.
+
 1. Run: npm outdated (or pnpm outdated, pip list --outdated, cargo outdated).
 2. Pick ONE outdated dependency matching FILTER. Priority: security patches > major versions > minor > patch.
 3. Update it to latest compatible version.
-4. Run all feedback loops from pilot.yaml.
-5. If breaking changes, try to fix them (update imports, adjust API calls).
-6. If unfixable, revert the update and note in progress.txt why.
-7. Commit if all loops pass. Include progress.txt.
-8. Append to progress.txt: package, old version, new version, any breaking changes.
-9. If all matching dependencies are current, output <promise>COMPLETE</promise>.
+4. If breaking changes appear, use the shared heal/retry/escalate flow instead of inventing a recipe-specific one.
+5. If all matching dependencies are current, emit PILOT_RESULT=done and <promise>COMPLETE</promise>.
 
 ONE dependency per iteration. Never batch updates.
 ```
@@ -70,9 +68,9 @@ After confirmation, launch the loop:
 
 ```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 20
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 20
 ```
 
 ### 4. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report dependencies updated.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop deletes only the override created for this run. Report dependencies updated.

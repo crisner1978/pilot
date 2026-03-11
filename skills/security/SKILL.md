@@ -25,14 +25,16 @@ Check that these exist:
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 2. Write Ephemeral Prompt
+### 2. Create Owned Prompt Override
 
-Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
+Parse arguments to determine SCOPE, then create an ephemeral prompt override. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a security audit loop.
 SCOPE: [resolved scope — path or "entire codebase"]
+
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, commit handling, progress logging, and top-level `PILOT_RESULT=...` output.
 
 1. Run: npm audit (or pip audit, cargo audit, etc.).
 2. Also scan for common OWASP issues within SCOPE:
@@ -44,10 +46,7 @@ SCOPE: [resolved scope — path or "entire codebase"]
    - Missing authentication/authorization checks
 3. Pick ONE issue — prioritize: critical > high > medium > low.
 4. Fix it with the minimal secure change needed.
-5. Run all feedback loops from pilot.yaml.
-6. Commit if all pass. Include progress.txt.
-7. Append to progress.txt: vulnerability type, severity, file, fix applied.
-8. If no security issues remain in SCOPE, output <promise>COMPLETE</promise>.
+5. If no security issues remain in SCOPE, emit PILOT_RESULT=done and <promise>COMPLETE</promise>.
 
 ONE vulnerability per iteration. Never introduce new vulnerabilities.
 ```
@@ -74,9 +73,9 @@ After confirmation, launch the loop:
 
 ```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 20
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 20
 ```
 
 ### 4. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report vulnerabilities fixed.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop deletes only the override created for this run. Report vulnerabilities fixed.

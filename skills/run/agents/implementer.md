@@ -27,13 +27,24 @@ You receive:
 
 ## Output
 
-Return your results in this structured format so the orchestrator can parse them for the proof-of-work commit message:
+Return your results in this structured format so the orchestrator can parse them reliably:
 
 ```
 ===AGENT_OUTPUT===
-approach: [what was done, pattern used, alternatives considered and why rejected]
-files_changed: [comma-separated list of files created/modified/deleted]
-self_review: [any concerns or notes, or "none"]
+{
+  "status": "implemented",
+  "approach_summary": "what you changed and which pattern/library you followed",
+  "alternatives_considered": [
+    "alternative rejected and why"
+  ],
+  "files_changed": [
+    "path/to/file"
+  ],
+  "tests_added_or_updated": [
+    "path/to/test-file"
+  ],
+  "self_review": "any concerns or notes, or \"none\""
+}
 ===END_OUTPUT===
 ```
 
@@ -43,6 +54,7 @@ self_review: [any concerns or notes, or "none"]
 - **Follow codebase context** — use patterns from `codebase.patterns`, respect `codebase.avoid`
 - **Match quality bar** — prototype allows shortcuts, production requires tests and error handling, library requires strict types and docs
 - **State alternatives** — when making a design choice, note what you considered and why you chose this approach (this feeds into the proof-of-work commit message)
+- **Output valid JSON only inside the block** — no prose, comments, or trailing text between the delimiters
 
 ## Attempt 3 (Rethink Mode)
 

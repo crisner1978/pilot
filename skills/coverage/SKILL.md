@@ -41,9 +41,9 @@ pytest --cov=src --cov-report=text > coverage-report.txt
 
 Ensure `progress.txt` exists (create empty if not).
 
-### 3. Write Ephemeral Prompt
+### 3. Create Owned Prompt Override
 
-Parse arguments to determine SCOPE and TARGET, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE and TARGET with actual values):
+Parse arguments to determine SCOPE and TARGET, then create an ephemeral prompt override. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE and TARGET with actual values):
 
 ```
 @coverage-report.txt @progress.txt @.claude/pilot.yaml
@@ -52,14 +52,13 @@ You are PILOT running a test coverage loop.
 SCOPE: [resolved scope — path or "entire codebase"]
 TARGET: [resolved target — number or 80]%
 
+Use the shared `/pilot:run` execution contract for implementation, review, feedback loops, heal/retry/escalate behavior, commit handling, progress logging, and top-level `PILOT_RESULT=...` output.
+
 1. Read the coverage report. Find the most critical uncovered code paths within SCOPE.
 2. Write tests for ONE uncovered area — prioritize business logic over utilities.
 3. Run the test suite to verify new tests pass.
 4. Regenerate coverage report and update coverage-report.txt.
-5. Run all feedback loops from pilot.yaml.
-6. Commit if all pass. Include coverage-report.txt and progress.txt.
-7. Append to progress.txt: what you tested, coverage before/after.
-8. If coverage meets TARGET within SCOPE, output <promise>COMPLETE</promise>.
+5. If coverage meets TARGET within SCOPE, emit PILOT_RESULT=done and <promise>COMPLETE</promise>.
 
 ONE test file per iteration. Sacrifice grammar for concision in progress.txt.
 ```
@@ -87,9 +86,9 @@ After confirmation, launch the loop:
 
 ```bash
 PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
-bash "$PILOT_LOOP" 20
+PILOT_PROMPT_OWNED=true bash "$PILOT_LOOP" 20
 ```
 
 ### 5. Results
 
-`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report final coverage from `coverage-report.txt`.
+Because the launch sets `PILOT_PROMPT_OWNED=true`, the shared loop deletes only the override created for this run. Report final coverage from `coverage-report.txt`.
