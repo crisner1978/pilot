@@ -18,10 +18,12 @@ Generate a PRD, detect your toolchain, identify feedback loop gaps, and configur
 You MUST complete these phases in order:
 
 1. **Context scan** — detect stack, toolchain, existing config
-2. **Gap analysis** — identify missing feedback loops, research + recommend tools
-3. **Task source** — gather tasks from user, GitHub Issues, or both
-4. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt, pilot-loop.sh
-5. **Readiness check** — dry-run feedback loops, flag issues
+2. **Targeted codebase analysis** — dispatch ScoutAgent to scan relevant areas
+3. **Gap analysis** — dispatch GapAgent to identify missing feedback loops
+4. **Task source** — gather tasks from user, GitHub Issues, or both
+5. **Task analysis** — dispatch ArchitectAgent to order tasks, add dependencies + context
+6. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt, pilot-loop.sh
+7. **Readiness check** — dry-run feedback loops, flag issues
 
 ## Phase 1 — Context Scan
 
@@ -69,9 +71,34 @@ Use AskUserQuestion to confirm protected paths:
 }
 ```
 
-## Phase 2 — Gap Analysis + Recommendations
+## Phase 2 — Targeted Codebase Analysis
 
-Map the detected toolchain against the four core feedback loops (see `references/stack-detection.md` for the full mapping table).
+After the user describes what they want to build (Phase 4), dispatch the **ScoutAgent** to analyze the relevant parts of the codebase. However, if context scan reveals enough about the project type from config files and directory structure, you may dispatch ScoutAgent early.
+
+Read `agents/scout.md` for the full agent prompt. Dispatch it as a subagent with:
+- The full file tree (run `find . -type f -not -path './.git/*' -not -path './node_modules/*' | head -200` or equivalent)
+- The task description from the user
+- The stack detection results from Phase 1
+- The scan heuristic table from `references/stack-detection.md`
+
+The ScoutAgent returns a `codebase:` YAML block. Store this for Phase 6 (generate artifacts) — it goes into `pilot.yaml`.
+
+Present the results to the user:
+```
+Codebase analysis complete:
+  Scanned: src/middleware/, src/api/, src/models/
+  Patterns: express-style middleware, zod validation, colocated tests
+  Key files: src/middleware/auth.ts (middleware pattern reference)
+```
+
+## Phase 3 — Gap Analysis
+
+Dispatch the **GapAgent** to analyze toolchain coverage. Read `agents/gap.md` for the full agent prompt. Dispatch it as a subagent with:
+- Stack detection results from Phase 1
+- Current feedback loop config
+- The stack detection reference (`references/stack-detection.md`)
+
+The GapAgent returns a structured gap analysis with recommendations. For each gap with a recommended tool, use AskUserQuestion to present options to the user (one question per gap). The GapAgent may also identify setup tasks — these become the first tasks in the PRD.
 
 For each **missing** feedback loop:
 1. Use WebSearch to find the best current tool for the detected stack
@@ -115,7 +142,7 @@ gaps:
   - browser: "No browser tests. Backend-only work — not needed for current PRD."
 ```
 
-## Phase 3 — Task Source
+## Phase 4 — Task Source
 
 Use AskUserQuestion for each decision:
 
@@ -190,7 +217,21 @@ Keep acceptance criteria to one sentence. The agent uses these to know what to i
 5. Standard features
 6. Polish and quick wins
 
-## Phase 4 — Generate Artifacts
+## Phase 5 — Task Analysis
+
+After gathering raw tasks, dispatch the **ArchitectAgent** to analyze and enrich them. Read `agents/architect.md` for the full agent prompt. Dispatch it as a subagent with:
+- The raw task list from Phase 4
+- The ScoutAgent codebase context from Phase 2
+- The quality bar setting
+- Any setup tasks from GapAgent (Phase 3)
+
+The ArchitectAgent returns:
+- Reordered task list with `Context:` and `Depends:` fields enriched
+- Parallel execution groups
+
+Use the ArchitectAgent's output as the task list for the PRD. Present the reordered tasks to the user for confirmation before generating artifacts.
+
+## Phase 6 — Generate Artifacts
 
 Generate all four files using the templates in this skill's `assets/` directory. Use the Write tool for each.
 
@@ -200,6 +241,8 @@ Generate all four files using the templates in this skill's `assets/` directory.
 
 Include `guardrails.protected_paths` from Phase 1 detection. If no paths were detected, omit the section.
 
+Include the `codebase:` section from ScoutAgent (Phase 2) in `pilot.yaml`. Include the parallel groups section from ArchitectAgent (Phase 5) in `PRD.md`.
+
 **File 3: `progress.txt`** — Read `assets/progress-template.txt`, fill in today's date, write to project root.
 
 **File 4: `pilot-loop.sh`** — Copy the plugin's script into the project root and make it executable:
@@ -208,7 +251,7 @@ Run: `cp ${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh ./pilot-loop.sh && chmo
 
 If `${CLAUDE_SKILL_DIR}` is not available, write the script inline (see scripts/pilot-loop.sh in the plugin repo for the canonical version).
 
-## Phase 5 — Readiness Check
+## Phase 7 — Readiness Check
 
 For each configured feedback loop, do a dry run:
 
