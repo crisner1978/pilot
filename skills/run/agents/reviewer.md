@@ -32,13 +32,16 @@ Does the code follow existing patterns and conventions?
 
 ## Output
 
-Return:
-- **spec_compliance** — pass or fail
-- **codebase_fit** — pass or fail
-- **issues** — list of issues with file:line references (if any)
-- **findings_summary** — one-liner for the proof-of-work commit message
-  - If all passed: "spec ✓ codebase-fit ✓"
-  - If issues were found and fixed: "spec ✓ (fixed: [what]) codebase-fit ✓ (fixed: [what])"
+Return your results in this structured format so the orchestrator can parse them for the proof-of-work commit message:
+
+```
+===AGENT_OUTPUT===
+spec_compliance: [pass|fail]
+codebase_fit: [pass|fail]
+issues: [list with file:line refs, or "none"]
+findings_summary: [one-liner for commit message, e.g. "spec ✓ codebase-fit ✓" or "spec ✓ (fixed: X) codebase-fit ✓"]
+===END_OUTPUT===
+```
 
 ## Rules
 

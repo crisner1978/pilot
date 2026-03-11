@@ -31,6 +31,7 @@ fi
 
 cleanup() {
   generate_report "${i:-0}"
+  rm -f "$PROMPT_FILE"
   if [ "$PILOT_STASHED" = true ]; then
     echo ""
     echo "Restoring stashed changes..."
@@ -156,7 +157,13 @@ PILOT_TASKS_DONE=0
 PILOT_TASKS_FAILED=0
 PILOT_TASKS_SKIPPED=0
 
-PROMPT='@PRD.md @progress.txt @.claude/pilot.yaml
+# --- Load prompt from .claude/pilot-prompt.md or use default ---
+PROMPT_FILE=".claude/pilot-prompt.md"
+
+if [ -f "$PROMPT_FILE" ]; then
+  PROMPT=$(cat "$PROMPT_FILE")
+else
+  PROMPT='@PRD.md @progress.txt @.claude/pilot.yaml
 You are PILOT — an autonomous coding agent running in loop mode.
 
 1. Read the PRD, progress file, and pilot config.
@@ -171,6 +178,7 @@ GUARDRAILS: Check guardrails.protected_paths before modifying ANY file. Skip tas
 9. If ALL tasks in the PRD are complete, output exactly: <promise>COMPLETE</promise>
 
 CRITICAL: Only work on ONE task per iteration. Do not batch multiple tasks.'
+fi
 
 if [ "$VERBOSE" = true ]; then
   PROMPT="$PROMPT

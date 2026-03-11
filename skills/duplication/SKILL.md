@@ -7,6 +7,8 @@ description: Use when reducing code duplication, finding copy-pasted code, or re
 
 Find duplicate code and refactor into shared utilities.
 
+**Announce at start:** "Running PILOT duplication cleanup loop."
+
 ## Arguments
 
 Optional scope: `/pilot:duplication [path]`
@@ -14,37 +16,62 @@ Optional scope: `/pilot:duplication [path]`
 - **No arguments** — scans entire codebase
 - **Directory** — scope to directory: `/pilot:duplication src/`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| jscpd | Install: `npm i -D jscpd` |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- `jscpd` — must be installed: `npm i -D jscpd`
 
-Runs jscpd to find code clones, picks the highest-impact duplicate, refactors it into a shared utility, verifies with feedback loops, and repeats until duplication is minimal.
+Ensure `progress.txt` exists (create empty if not).
 
-## The Prompt
+### 2. Write Ephemeral Prompt
+
+Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a duplication cleanup loop.
+SCOPE: [resolved scope — path or "entire codebase"]
 
-1. Run: npx jscpd --min-lines 5 --min-tokens 50 --reporters console .
+1. Run: npx jscpd --min-lines 5 --min-tokens 50 --reporters console SCOPE
 2. Pick the highest-impact duplicate (most lines, most copies).
 3. Refactor into a shared utility — extract function, module, or component.
 4. Update all call sites to use the shared utility.
 5. Run all feedback loops from pilot.yaml.
 6. Commit if all pass. Include progress.txt.
 7. Append to progress.txt: what was duplicated, where, new shared location.
-8. If no significant duplicates remain, output <promise>COMPLETE</promise>.
+8. If no significant duplicates remain in SCOPE, output <promise>COMPLETE</promise>.
 
 ONE refactor per iteration.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch duplication cleanup loop?\n  Scope: [scope]",
+    "header": "Duplication",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start duplication cleanup loop"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-./pilot-loop.sh 20
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report duplications resolved.

@@ -7,6 +7,8 @@ description: Use when improving accessibility, fixing WCAG violations, adding AR
 
 Incrementally improve accessibility across a frontend codebase.
 
+**Announce at start:** "Running PILOT accessibility loop."
+
 ## Arguments
 
 Optional scope: `/pilot:a11y [url]`
@@ -14,25 +16,27 @@ Optional scope: `/pilot:a11y [url]`
 - **No arguments** — audits `http://localhost:3000`
 - **URL** — audit specific page: `/pilot:a11y http://localhost:3000/dashboard`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| axe-cli or browser MCP | Install: `npm i -D @axe-core/cli` or use Chrome DevTools MCP |
-| Dev server running | App must be running at localhost for auditing |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- `axe-cli` or Chrome DevTools MCP — install: `npm i -D @axe-core/cli`
+- Dev server must be running at localhost
 
-Runs an accessibility audit, picks ONE violation (prioritizing critical/serious), fixes it, verifies the fix, and repeats until no violations remain.
+Ensure `progress.txt` exists (create empty if not).
 
-## The Prompt
+### 2. Write Ephemeral Prompt
+
+Parse arguments to determine URL, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing URL with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running an accessibility improvement loop.
+URL: [resolved URL — argument or "http://localhost:3000"]
 
-1. Run: npx axe-cli http://localhost:3000 --exit (or use browser MCP to audit).
+1. Run: npx axe-cli URL --exit (or use browser MCP to audit).
 2. Pick ONE accessibility violation — prioritize: critical > serious > moderate > minor.
 3. Fix it — add ARIA attributes, fix contrast, add alt text, fix focus order, etc.
 4. Re-run the audit to verify the fix.
@@ -44,12 +48,31 @@ You are PILOT running an accessibility improvement loop.
 ONE violation per iteration.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch accessibility loop?\n  URL: [url]\n  Dev server: [running/not detected]",
+    "header": "A11y",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start accessibility loop"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-# Start your dev server first
-npm run dev &
-
-# Then launch
-./pilot-loop.sh 20
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report violations fixed.

@@ -7,6 +7,8 @@ description: Use when tightening TypeScript types, removing any types, adding ty
 
 Incrementally tighten TypeScript types across a codebase.
 
+**Announce at start:** "Running PILOT type strictness loop."
+
 ## Arguments
 
 Optional scope: `/pilot:types [path]`
@@ -15,25 +17,24 @@ Optional scope: `/pilot:types [path]`
 - **File path** — fix types in one file: `/pilot:types src/api/auth.ts`
 - **Directory** — scope to directory: `/pilot:types src/api/`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| TypeScript | `feedback.typecheck` must be set in pilot.yaml |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- `feedback.typecheck` must be set in pilot.yaml
 
-Finds files with `any` types or type errors, fixes ONE file per iteration, verifies with typecheck and tests, and repeats until the codebase is strictly typed.
+Ensure `progress.txt` exists (create empty if not).
 
-If arguments were provided, scope all operations to the specified path.
+### 2. Write Ephemeral Prompt
 
-## The Prompt
+Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a type strictness loop.
-SCOPE: [if arguments provided, insert path here; otherwise "entire codebase"]
+SCOPE: [resolved scope — path or "entire codebase"]
 
 1. Search for files using `any` type or with type errors within SCOPE.
 2. Pick ONE file — prioritize core business logic over utilities.
@@ -47,13 +48,31 @@ SCOPE: [if arguments provided, insert path here; otherwise "entire codebase"]
 ONE file per iteration.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch type strictness loop?\n  Scope: [scope]\n  Typecheck: [from pilot.yaml]",
+    "header": "Types",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start type strictness loop"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-# Whole codebase
-./pilot-loop.sh 30
-
-# Scoped to a directory
-# Edit the SCOPE line in pilot-loop.sh prompt to: src/api/
-./pilot-loop.sh 10
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report how many `any` types were removed.

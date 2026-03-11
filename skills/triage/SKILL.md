@@ -7,6 +7,8 @@ description: Use when processing GitHub issues into PRs, automating issue implem
 
 Process GitHub issues into branches and PRs automatically.
 
+**Announce at start:** "Running PILOT issue triage loop."
+
 ## Arguments
 
 Optional scope: `/pilot:triage [filter]`
@@ -15,25 +17,25 @@ Optional scope: `/pilot:triage [filter]`
 - **Label** — filter by label: `/pilot:triage --label bug`
 - **Milestone** — filter by milestone: `/pilot:triage --milestone v2.0`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| gh CLI | Must be installed and authenticated: `gh auth status` |
-| Issue labels | Issues ready for automation should be labeled `ready` (or your chosen label) |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- `gh` CLI — must be installed and authenticated: run `gh auth status`
 
-Fetches open GitHub issues with a target label, picks the highest-priority one, creates a branch, implements the fix/feature, runs feedback loops, opens a PR referencing the issue, and repeats.
+Ensure `progress.txt` exists (create empty if not).
 
-## The Prompt
+### 2. Write Ephemeral Prompt
+
+Parse arguments to determine the issue filter (label, milestone, or default "ready"), then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing FILTER with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running an issue triage loop.
 
-1. Run: gh issue list --limit 10 --state open --label "ready"
+1. Run: gh issue list --limit 10 --state open --label "FILTER"
 2. Pick the highest-priority issue. Read it fully with: gh issue view [number]
 3. Create branch: git checkout -b pilot/issue-[number]-[short-description]
 4. Implement the fix or feature described in the issue.
@@ -42,13 +44,37 @@ You are PILOT running an issue triage loop.
 7. Push and open PR: gh pr create --title "[type]: [description]" --body "Closes #[number]"
 8. Return to main branch: git checkout main
 9. Append to progress.txt: issue number, title, PR URL.
-10. If no "ready" issues remain, output <promise>COMPLETE</promise>.
+10. If no matching issues remain, output <promise>COMPLETE</promise>.
 
 ONE issue per iteration. Create clean, reviewable PRs.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch issue triage loop?\n  Filter: [filter]\n  GitHub auth: [status]",
+    "header": "Triage",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start issue triage loop"},
+      {"label": "Change filter", "description": "Use a different label or milestone"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-./pilot-loop.sh 10
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 10
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report issues processed and PRs created.

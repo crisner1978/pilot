@@ -22,7 +22,7 @@ You MUST complete these phases in order:
 3. **Gap analysis** — dispatch GapAgent to identify missing feedback loops
 4. **Task source** — gather tasks from user, GitHub Issues, or both
 5. **Task analysis** — dispatch ArchitectAgent to order tasks, add dependencies + context
-6. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt, pilot-loop.sh
+6. **Generate artifacts** — PRD.md, .claude/pilot.yaml, progress.txt
 7. **Readiness check** — dry-run feedback loops, flag issues
 
 ## Phase 1 — Context Scan
@@ -231,7 +231,7 @@ Use the ArchitectAgent's output as the task list for the PRD. Present the reorde
 
 ## Phase 6 — Generate Artifacts
 
-Generate all four files using the templates in this skill's `assets/` directory. Use the Write tool for each.
+Generate all three files using the templates in this skill's `assets/` directory. Use the Write tool for each.
 
 **File 1: `PRD.md`** — Read `assets/prd-template.md`, fill in task details from Phase 3, write to project root.
 
@@ -243,11 +243,7 @@ Include the `codebase:` section from ScoutAgent (Phase 2) in `pilot.yaml`. Inclu
 
 **File 3: `progress.txt`** — Read `assets/progress-template.txt`, fill in today's date, write to project root.
 
-**File 4: `pilot-loop.sh`** — Copy the plugin's script into the project root and make it executable:
-
-Run: `cp ${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh ./pilot-loop.sh && chmod +x pilot-loop.sh`
-
-If `${CLAUDE_SKILL_DIR}` is not available, write the script inline (see scripts/pilot-loop.sh in the plugin repo for the canonical version).
+**Note:** `pilot-loop.sh` lives in the PILOT plugin at `scripts/pilot-loop.sh` and is invoked from there by `/pilot:loop`. Do **not** copy it into the user's project — this avoids version drift and repo pollution. The loop script contains a default prompt for PRD-based execution. Recipe skills (coverage, lint-fix, etc.) write an ephemeral `.claude/pilot-prompt.md` before launching the loop — the script reads it if present and auto-deletes it on exit.
 
 ## Phase 7 — Readiness Check
 
@@ -273,10 +269,9 @@ Present the summary, then use AskUserQuestion to let the user choose how to proc
 PILOT setup complete!
 
 Generated:
-  PRD.md              — [N] tasks, prioritized
-  .claude/pilot.yaml  — toolchain config
-  progress.txt        — ready for iteration logs
-  pilot-loop.sh       — autonomous loop script
+  PRD.md                  — [N] tasks, prioritized
+  .claude/pilot.yaml      — toolchain config
+  progress.txt            — ready for iteration logs
 ```
 
 ```json

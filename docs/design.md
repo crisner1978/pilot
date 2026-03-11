@@ -44,7 +44,7 @@ pilot/                              # github.com/crisner1978/pilot
 │   └── [9 more recipe skills]/    # coverage, lint-fix, duplication, entropy,
 │       └── SKILL.md                # deps, types, docs, a11y, security, triage
 ├── scripts/
-│   └── pilot-loop.sh                 # bash loop template
+│   └── pilot-loop.sh                 # bash loop script (runs from plugin dir, never copied)
 ├── docs/
 │   ├── design.md
 │   └── recipes.md                  # recipe reference + custom recipe guide
@@ -81,7 +81,7 @@ claude plugin install pilot
 | `/pilot:loop` | Validate readiness and launch the loop script | Autonomous |
 | `/pilot:status` | Sprint dashboard — progress, last run, blockers, next actions | HITL |
 | `/pilot:add` | Insert a task into an existing PRD mid-sprint | HITL |
-| `pilot-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel | Autonomous |
+| `pilot-loop.sh` | Bash loop calling `claude -p` with iteration cap + sentinel (lives in plugin `scripts/`) | Autonomous |
 
 ### File Convention
 
@@ -92,8 +92,9 @@ Files generated into the user's project:
 ├── pilot.yaml             # Generated config (toolchain, sources, feedback loops)
 PRD.md                     # Generated task backlog (checklist format)
 progress.txt               # Append-only structured log of completed work
-pilot-loop.sh                # Pre-configured bash loop script
 ```
+
+**Ephemeral file:** Recipe skills write `.claude/pilot-prompt.md` before launching the loop. This file is auto-deleted on loop exit — it is not a permanent project artifact.
 
 ### Flow
 
@@ -103,7 +104,7 @@ pilot-loop.sh                # Pre-configured bash loop script
     ├── Auto-detects: vitest, tsc, eslint, biome, playwright, jest, pytest...
     ├── Gap analysis: identifies missing feedback loops, web searches for best tool
     ├── Recommends: "No linter — Biome recommended for this stack. Add setup to PRD?"
-    ├── Generates: PRD.md + .claude/pilot.yaml + progress.txt + pilot-loop.sh
+    ├── Generates: PRD.md + .claude/pilot.yaml + progress.txt
     └── Verifies: feedback loops actually run (dry run)
 
 /pilot:run (one task, manual)
@@ -118,7 +119,7 @@ pilot-loop.sh                # Pre-configured bash loop script
     ├── Validates PRD.md and pilot.yaml exist
     ├── Dry-runs feedback loops
     ├── Confirms iteration cap and sandbox preference
-    └── Launches pilot-loop.sh
+    └── Launches pilot-loop.sh (from plugin scripts/ dir)
 ```
 
 ## Planning Skill (`/pilot:plan`)
@@ -152,7 +153,7 @@ The brain of the system. Interactive, one-question-at-a-time.
 - `PRD.md` — prioritized task checklist with validation criteria per task
 - `.claude/pilot.yaml` — toolchain config, feedback loops, task source, iteration limits, gaps
 - `progress.txt` — empty, ready to go
-- `pilot-loop.sh` — pre-configured with iteration cap from config
+- `pilot-loop.sh` stays in the plugin's `scripts/` directory — never copied into the user's project
 
 ### Phase 5 — Readiness Check
 
@@ -196,7 +197,7 @@ The skill validates readiness and launches the script:
 2. Confirm feedback loops work (dry run)
 3. Ask for iteration cap (default from config)
 4. Ask: Docker sandbox? (recommended for autonomous)
-5. Launch `pilot-loop.sh`
+5. Launch `pilot-loop.sh` from plugin `scripts/` directory
 
 ### Script
 
@@ -392,7 +393,7 @@ Assembled by the orchestrator from ImplementerAgent (approach, alternatives) + R
 
 ## Recipe Skills
 
-Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — each a specialized loop that uses the same mechanics with a different prompt:
+Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — each a self-executing specialized loop. Recipe skills write an ephemeral prompt to `.claude/pilot-prompt.md`, launch `pilot-loop.sh`, and clean up automatically:
 
 | Skill | Command | What It Does |
 |-------|---------|-------------|
@@ -408,7 +409,7 @@ Beyond the core `plan`/`run`/`loop` workflow, PILOT ships 11 recipe skills — e
 | Security | `/pilot:security` | Find and fix security vulnerabilities |
 | Triage | `/pilot:triage` | Process GitHub issues into branches and PRs |
 
-Each recipe is a full SKILL.md with arguments, prerequisites, prompt, and launch instructions. See `docs/recipes.md` for details and a guide to writing custom recipes.
+Each recipe is a self-executing SKILL.md: validate prerequisites → write ephemeral prompt → confirm with user → launch loop → auto-cleanup. See `docs/recipes.md` for details and a guide to writing custom recipes.
 
 ## Manual vs Autonomous Guidance
 

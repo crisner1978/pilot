@@ -13,7 +13,7 @@ READY=true
 
 # 1. Check required files
 echo "Files:"
-for file in PRD.md .claude/pilot.yaml progress.txt pilot-loop.sh; do
+for file in PRD.md .claude/pilot.yaml progress.txt; do
   if test -f "$file"; then
     echo "  $file ✓"
   else

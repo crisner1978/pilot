@@ -18,7 +18,6 @@ Before launching loop mode, ALL of these must be true:
 | PRD.md exists | Read `PRD.md` — must have unchecked tasks |
 | pilot.yaml exists | Read `.claude/pilot.yaml` — must have feedback loops configured |
 | progress.txt exists | Read `progress.txt` — should exist (even if empty) |
-| pilot-loop.sh exists | Check for `pilot-loop.sh` in project root |
 | Feedback loops work | Dry-run each command from pilot.yaml |
 
 If any prerequisite fails, tell the user what's missing and suggest: "Run `/pilot:plan` to set up PILOT."
@@ -28,12 +27,12 @@ If any prerequisite fails, tell the user what's missing and suggest: "Run `/pilo
 Run the validation script to check all prerequisites at once:
 
 ```bash
-bash ${CLAUDE_SKILL_DIR}/scripts/validate-readiness.sh
+bash "${CLAUDE_SKILL_DIR}/scripts/validate-readiness.sh"
 ```
 
 If `${CLAUDE_SKILL_DIR}` is not available, perform the checks manually:
 
-1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt`, `pilot-loop.sh` are all present
+1. **Check files exist** — verify `PRD.md`, `.claude/pilot.yaml`, `progress.txt` are all present
 2. **Count remaining tasks** — read PRD.md, count unchecked (`- [ ]`) vs checked (`- [x]`) tasks. If all complete, nothing to run.
 3. **Dry-run feedback loops** — run each configured command from pilot.yaml, report pass/fail for each
 
@@ -75,23 +74,35 @@ After validation passes, present a summary and use AskUserQuestion to confirm:
 }
 ```
 
+## Prompt Lifecycle
+
+`pilot-loop.sh` reads its prompt from `.claude/pilot-prompt.md` if the file exists, otherwise it uses a built-in default prompt for PRD-based execution. The prompt file is **ephemeral** — it is auto-deleted when the loop exits (success, failure, or Ctrl+C).
+
+- **Default (no prompt file):** Loop executes tasks from `PRD.md` using the built-in prompt
+- **Recipe skills** (coverage, lint-fix, etc.) write their own prompt to `.claude/pilot-prompt.md` before launching the loop
+- **After loop exit:** The prompt file is cleaned up automatically — no stale state
+
 ## Launch
 
-After confirmation, provide the launch command:
+After confirmation, launch the script from the plugin directory. Resolve the script path using `${CLAUDE_SKILL_DIR}`:
 
 ```bash
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+
 # Standard launch
-./pilot-loop.sh [iterations]
+bash "$PILOT_LOOP" [iterations]
 
 # With verbose decisions (medium verbosity)
-./pilot-loop.sh [iterations] --verbose
+bash "$PILOT_LOOP" [iterations] --verbose
 
 # With Docker sandbox
-./pilot-loop.sh [iterations] --sandbox
+bash "$PILOT_LOOP" [iterations] --sandbox
 
 # Combined
-./pilot-loop.sh [iterations] --sandbox --verbose
+bash "$PILOT_LOOP" [iterations] --sandbox --verbose
 ```
+
+If `${CLAUDE_SKILL_DIR}` is not available, locate the script relative to the plugin installation (typically `~/.claude/skills/*/pilot/scripts/pilot-loop.sh`).
 
 Tell the user:
 ```

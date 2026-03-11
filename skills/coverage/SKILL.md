@@ -7,6 +7,8 @@ description: Use when improving test coverage, finding untested code paths, or t
 
 Iteratively write tests for uncovered code paths until coverage hits your target.
 
+**Announce at start:** "Running PILOT coverage loop."
+
 ## Arguments
 
 Optional scope: `/pilot:coverage [path] [--target N]`
@@ -16,40 +18,39 @@ Optional scope: `/pilot:coverage [path] [--target N]`
 - **Target** — custom target: `/pilot:coverage --target 90`
 - **Both** — `/pilot:coverage src/lib/ --target 95`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| Coverage tool | Your test runner must support coverage (vitest, jest, pytest-cov, etc.) |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- Coverage tool — test runner must support coverage (vitest, jest, pytest-cov, etc.)
 
-Generates a coverage report, finds the most critical uncovered code paths, writes tests for ONE area per iteration, re-runs coverage to verify improvement, commits, and repeats until the target is met.
-
-## Setup
+### 2. Setup
 
 Generate an initial coverage report:
+
 ```bash
 # JavaScript/TypeScript
 vitest run --coverage > coverage-report.txt
-# or
-jest --coverage > coverage-report.txt
+# or: jest --coverage > coverage-report.txt
 
 # Python
 pytest --cov=src --cov-report=text > coverage-report.txt
 ```
 
-## The Prompt
+Ensure `progress.txt` exists (create empty if not).
 
-Replace the prompt in your `pilot-loop.sh` with:
+### 3. Write Ephemeral Prompt
+
+Parse arguments to determine SCOPE and TARGET, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE and TARGET with actual values):
 
 ```
 @coverage-report.txt @progress.txt @.claude/pilot.yaml
 You are PILOT running a test coverage loop.
 
-SCOPE: [if path provided, insert here; otherwise "entire codebase"]
-TARGET: [if --target provided, use that; otherwise 80%]
+SCOPE: [resolved scope — path or "entire codebase"]
+TARGET: [resolved target — number or 80]%
 
 1. Read the coverage report. Find the most critical uncovered code paths within SCOPE.
 2. Write tests for ONE uncovered area — prioritize business logic over utilities.
@@ -63,12 +64,32 @@ TARGET: [if --target provided, use that; otherwise 80%]
 ONE test file per iteration. Sacrifice grammar for concision in progress.txt.
 ```
 
-## Launch
+### 4. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch coverage loop?\n  Scope: [scope]\n  Target: [target]%\n  Coverage tool: [detected tool]",
+    "header": "Coverage",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start coverage loop with settings above"},
+      {"label": "Change target", "description": "Set a different coverage target"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-# HITL — one test file at a time
-./pilot-loop.sh 1
-
-# Autonomous — grind to 80%
-./pilot-loop.sh 30
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 5. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report final coverage from `coverage-report.txt`.

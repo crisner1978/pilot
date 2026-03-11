@@ -101,25 +101,27 @@ If the user selects "Skip to next", move to the next unchecked task and preview 
 
 ### 4. Dispatch ImplementerAgent
 
-Read `agents/implementer.md` for the full agent prompt. Dispatch it as a subagent with:
+Read `agents/implementer.md` for the full agent prompt. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch it as a subagent. Include in the prompt:
+- The full agent prompt from `agents/implementer.md`
 - The task (description, acceptance criteria, context hints, expected files)
 - Codebase context from `pilot.yaml` `codebase:` section
 - Quality bar from `pilot.yaml`
 
-The ImplementerAgent states its approach, implements the code, writes tests, and self-reviews. It returns:
+The ImplementerAgent states its approach, implements the code, writes tests, and self-reviews. Parse the `===AGENT_OUTPUT===` block from its response to extract:
 - **approach** — what was done, alternatives considered
 - **files_changed** — list of files
 - **self_review** — any concerns
 
 ### 5. Dispatch ReviewerAgent
 
-Read `agents/reviewer.md` for the full agent prompt. Dispatch it as a subagent with:
+Read `agents/reviewer.md` for the full agent prompt. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch it as a subagent. Include in the prompt:
+- The full agent prompt from `agents/reviewer.md`
 - The diff from ImplementerAgent
 - The task's acceptance criteria and context
 - Codebase context from `pilot.yaml`
 
-The ReviewerAgent checks spec compliance and codebase fit. If issues are found:
-1. Send issues back to ImplementerAgent for fixes
+The ReviewerAgent checks spec compliance and codebase fit. Parse the `===AGENT_OUTPUT===` block from its response. If issues are found:
+1. Send issues back to ImplementerAgent for fixes (dispatch via Task tool again)
 2. ReviewerAgent re-reviews
 3. Max 2 review rounds — then proceed to feedback loops regardless
 
@@ -148,13 +150,13 @@ npx playwright test    # browser (if configured)
 If a feedback loop fails, use the smart escalation chain:
 
 **Attempt 1 — HealerAgent targeted fix:**
-Read `agents/healer.md`. Dispatch with the error output, diff, acceptance criteria, and codebase context. HealerAgent diagnoses the root cause and applies a minimal fix. Re-run the failing feedback loop.
+Read `agents/healer.md`. Use the **Task tool** (`subagent_type: "general-purpose"`) to dispatch with the full agent prompt, error output, diff, acceptance criteria, and codebase context. Parse the `===AGENT_OUTPUT===` block for diagnosis and fix. Re-run the failing feedback loop.
 
 **Attempt 2 — HealerAgent different approach:**
-If attempt 1 didn't fix it, dispatch HealerAgent again with attempt number 2. It tries a different fix strategy. Re-run the failing feedback loop.
+If attempt 1 didn't fix it, dispatch HealerAgent again via **Task tool** with attempt number 2. It tries a different fix strategy. Re-run the failing feedback loop.
 
 **Attempt 3 — Fresh ImplementerAgent rethink:**
-If HealerAgent couldn't fix it, dispatch a **fresh** ImplementerAgent with failure context: "Attempts 1-2 tried X and Y. Both failed because Z. Try a different approach entirely." The fresh ImplementerAgent rethinks from scratch, then goes through ReviewerAgent and feedback loops again.
+If HealerAgent couldn't fix it, dispatch a **fresh** ImplementerAgent via **Task tool** with failure context: "Attempts 1-2 tried X and Y. Both failed because Z. Try a different approach entirely." The fresh ImplementerAgent rethinks from scratch, then goes through ReviewerAgent and feedback loops again.
 
 **After attempt 3 — Escalate to human:**
 - Do NOT commit broken code
@@ -164,7 +166,7 @@ If HealerAgent couldn't fix it, dispatch a **fresh** ImplementerAgent with failu
 
 ### 8. Commit with Proof of Work
 
-Only after ALL feedback loops pass. Assemble the commit message from agent outputs:
+Only after ALL feedback loops pass. Assemble the commit message from the `===AGENT_OUTPUT===` blocks returned by each agent:
 
 ```
 [type]: [short description]

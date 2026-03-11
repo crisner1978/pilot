@@ -7,6 +7,8 @@ description: Use when fixing lint errors, resolving linting violations, or clean
 
 Fix lint violations one by one with verification between each fix.
 
+**Announce at start:** "Running PILOT lint fix loop."
+
 ## Arguments
 
 Optional scope: `/pilot:lint-fix [path]`
@@ -15,25 +17,24 @@ Optional scope: `/pilot:lint-fix [path]`
 - **File** — fix one file: `/pilot:lint-fix src/api/auth.ts`
 - **Directory** — scope to directory: `/pilot:lint-fix src/components/`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
-| Linter configured | `feedback.lint` must be set in pilot.yaml |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
+- `feedback.lint` must be set in pilot.yaml
 
-Runs the linter, picks ONE error, fixes it, re-runs the linter to verify the fix didn't introduce new errors, commits, and repeats until clean.
+Ensure `progress.txt` exists (create empty if not).
 
-## The Prompt
+### 2. Write Ephemeral Prompt
 
-Replace the prompt in your `pilot-loop.sh` with:
+Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a lint fix loop.
-SCOPE: [if path provided, insert here; otherwise "entire codebase"]
+SCOPE: [resolved scope — path or "entire codebase"]
 
 1. Run the lint command from pilot.yaml, scoped to SCOPE if provided.
 2. Pick ONE lint error within SCOPE — prioritize errors over warnings.
@@ -47,12 +48,31 @@ SCOPE: [if path provided, insert here; otherwise "entire codebase"]
 ONE fix per iteration. Do not batch fixes.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch lint fix loop?\n  Scope: [scope]\n  Linter: [from pilot.yaml]",
+    "header": "Lint fix",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start lint fix loop"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-# HITL
-./pilot-loop.sh 1
-
-# Autonomous — clean up all violations
-./pilot-loop.sh 50
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report how many lint errors were fixed.

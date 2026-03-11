@@ -27,10 +27,15 @@ You receive:
 
 ## Output
 
-Return:
-- **approach** — what was done, what pattern used, alternatives considered and why rejected
-- **files_changed** — list of files created/modified/deleted
-- **self_review** — any concerns or notes from self-review
+Return your results in this structured format so the orchestrator can parse them for the proof-of-work commit message:
+
+```
+===AGENT_OUTPUT===
+approach: [what was done, pattern used, alternatives considered and why rejected]
+files_changed: [comma-separated list of files created/modified/deleted]
+self_review: [any concerns or notes, or "none"]
+===END_OUTPUT===
+```
 
 ## Rules
 

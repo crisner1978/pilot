@@ -7,6 +7,8 @@ description: Use when generating API documentation, adding JSDoc comments, docum
 
 Generate or update API documentation from source code.
 
+**Announce at start:** "Running PILOT documentation loop."
+
 ## Arguments
 
 Optional scope: `/pilot:docs [path]`
@@ -15,23 +17,25 @@ Optional scope: `/pilot:docs [path]`
 - **File** — document one file: `/pilot:docs src/api/auth.ts`
 - **Directory** — scope to directory: `/pilot:docs src/lib/`
 
-## Prerequisites
+## Execution
 
-| Prerequisite | Check |
-|---|---|
-| pilot.yaml | `.claude/pilot.yaml` must exist — run `/pilot:plan` first |
+### 1. Validate Prerequisites
 
-## How It Works
+Check that these exist:
+- `.claude/pilot.yaml` — must exist. If missing: "Run `/pilot:plan` first."
 
-Finds public functions, classes, or endpoints missing documentation, writes clear JSDoc/docstrings with params, return types, and examples, verifies with feedback loops, and repeats.
+Ensure `progress.txt` exists (create empty if not).
 
-## The Prompt
+### 2. Write Ephemeral Prompt
+
+Parse arguments to determine SCOPE, then write the prompt file. Use the Write tool to create `.claude/pilot-prompt.md` with this content (replacing SCOPE with actual value):
 
 ```
 @progress.txt @.claude/pilot.yaml
 You are PILOT running a documentation loop.
+SCOPE: [resolved scope — path or "entire codebase"]
 
-1. Find ONE public function, class, method, or API endpoint missing documentation.
+1. Find ONE public function, class, method, or API endpoint missing documentation within SCOPE.
 2. Prioritize: exported functions > public methods > internal utilities.
 3. Write clear, concise JSDoc/docstring:
    - @param for each parameter with type and description
@@ -41,13 +45,36 @@ You are PILOT running a documentation loop.
 4. Run all feedback loops from pilot.yaml.
 5. Commit if all pass. Include progress.txt.
 6. Append to progress.txt: function/class name, file.
-7. If all public APIs are documented, output <promise>COMPLETE</promise>.
+7. If all public APIs in SCOPE are documented, output <promise>COMPLETE</promise>.
 
 ONE function/class per iteration. Keep docs concise — not novels.
 ```
 
-## Launch
+### 3. Confirm and Launch
+
+Use AskUserQuestion to confirm:
+
+```json
+{
+  "questions": [{
+    "question": "Launch documentation loop?\n  Scope: [scope]",
+    "header": "Docs",
+    "options": [
+      {"label": "Launch (Recommended)", "description": "Start documentation loop"},
+      {"label": "Cancel", "description": "Don't launch"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+After confirmation, launch the loop:
 
 ```bash
-./pilot-loop.sh 30
+PILOT_LOOP="${CLAUDE_SKILL_DIR}/../../scripts/pilot-loop.sh"
+bash "$PILOT_LOOP" 20
 ```
+
+### 4. Results
+
+`pilot-loop.sh` auto-deletes `.claude/pilot-prompt.md` on exit. Report functions/classes documented.

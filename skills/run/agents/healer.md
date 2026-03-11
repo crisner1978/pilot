@@ -21,10 +21,15 @@ You receive:
 
 ## Output
 
-Return:
-- **diagnosis** — what went wrong and why (one sentence)
-- **fix** — what was changed to fix it
-- **confidence** — high / medium / low that this fix resolves the issue
+Return your results in this structured format so the orchestrator can parse them:
+
+```
+===AGENT_OUTPUT===
+diagnosis: [what went wrong and why — one sentence]
+fix: [what was changed to fix it]
+confidence: [high|medium|low]
+===END_OUTPUT===
+```
 
 ## Rules
 
