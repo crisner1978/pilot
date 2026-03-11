@@ -15,11 +15,13 @@
 
 - [ ] **1.** [Task description]
   - Acceptance: [one-liner — what "done" looks like, testable]
+  - Context: [pattern notes, integration hints from ArchitectAgent]
   - Validation: [feedback loops]
   - Files: [expected files]
 
 - [ ] **2.** [Task description]
   - Acceptance: [one-liner]
+  - Context: [notes]
   - Validation: [feedback loops]
   - Files: [expected files]
   - Depends: [task #, only if blocked without it]
@@ -33,3 +35,11 @@
 ## Quality Bar
 
 [prototype/production/library + notes from CLAUDE.md if present]
+
+## Parallel Groups
+
+Groups can run in separate worktrees simultaneously.
+
+- Group A: [task chain]
+- Group B: [task chain]
+- Group C: [independent tasks]
